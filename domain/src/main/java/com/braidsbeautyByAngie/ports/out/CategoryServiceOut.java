@@ -1,0 +1,21 @@
+package com.braidsbeautyByAngie.ports.out;
+
+import com.braidsbeautyByAngie.aggregates.dto.ProductCategoryDTO;
+import com.braidsbeautyByAngie.aggregates.request.RequestCategory;
+import com.braidsbeautyByAngie.aggregates.response.categories.ResponseCategory;
+import com.braidsbeautyByAngie.aggregates.response.categories.ResponseListPageableCategory;
+
+import java.util.Optional;
+
+public interface CategoryServiceOut {
+
+    ProductCategoryDTO createCategoryOut(RequestCategory requestCategory);
+
+    Optional<ResponseCategory> findCategoryByIdOut(Long categoryId);
+
+    ProductCategoryDTO updateCategoryOut(RequestCategory requestCategory, Long categoryId);
+
+    ProductCategoryDTO deleteCategoryOut(Long categoryId);
+
+    ResponseListPageableCategory listCategoryPageableOut(int pageNumber, int pageSize, String orderBy, String sortDir);
+}
