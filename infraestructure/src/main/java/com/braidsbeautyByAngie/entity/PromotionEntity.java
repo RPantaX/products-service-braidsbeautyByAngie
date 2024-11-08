@@ -3,7 +3,7 @@ package com.braidsbeautyByAngie.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.security.Timestamp;
+import java.sql.Timestamp;
 import java.util.Set;
 
 @Entity
@@ -48,11 +48,11 @@ public class PromotionEntity {
     private String modifiedByUser;
 
     @Column(name = "created_at", nullable = false)
-    private java.sql.Timestamp createdAt;
+    private Timestamp createdAt;
 
     @Column(name = "modified_at")
-    private java.sql.Timestamp modifiedAt;
+    private Timestamp modifiedAt;
 
     @Column(name = "deleted_at")
-    private java.sql.Timestamp deletedAt;
+    private Timestamp deletedAt;
 }
