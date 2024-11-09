@@ -2,6 +2,7 @@ package com.braidsbeautyByAngie.ports.out;
 
 import com.braidsbeautyByAngie.aggregates.dto.ProductCategoryDTO;
 import com.braidsbeautyByAngie.aggregates.request.RequestCategory;
+import com.braidsbeautyByAngie.aggregates.request.RequestSubCategory;
 import com.braidsbeautyByAngie.aggregates.response.categories.ResponseCategory;
 import com.braidsbeautyByAngie.aggregates.response.categories.ResponseListPageableCategory;
 
@@ -11,9 +12,13 @@ public interface CategoryServiceOut {
 
     ProductCategoryDTO createCategoryOut(RequestCategory requestCategory);
 
+    ProductCategoryDTO createSubCategoryOut(RequestSubCategory requestSubCategory);
+
     Optional<ResponseCategory> findCategoryByIdOut(Long categoryId);
 
     ProductCategoryDTO updateCategoryOut(RequestCategory requestCategory, Long categoryId);
+
+    ProductCategoryDTO updateSubCategoryOut(RequestSubCategory requestSubCategory, Long categoryId);
 
     ProductCategoryDTO deleteCategoryOut(Long categoryId);
 

@@ -12,6 +12,6 @@ import java.util.List;
 @Getter
 @Setter
 public class ResponseVariation {
-    private VariationDTO variationDTOList;
-    private List<VariationOptionDTO> variationOptionDTOList;
+    private VariationOptionDTO variationOptionDTO;
+    private List<VariationDTO> variationDTOList;
 }

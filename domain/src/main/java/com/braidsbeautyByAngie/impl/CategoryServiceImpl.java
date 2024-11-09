@@ -2,6 +2,7 @@ package com.braidsbeautyByAngie.impl;
 
 import com.braidsbeautyByAngie.aggregates.dto.ProductCategoryDTO;
 import com.braidsbeautyByAngie.aggregates.request.RequestCategory;
+import com.braidsbeautyByAngie.aggregates.request.RequestSubCategory;
 import com.braidsbeautyByAngie.aggregates.response.categories.ResponseCategory;
 import com.braidsbeautyByAngie.aggregates.response.categories.ResponseListPageableCategory;
 import com.braidsbeautyByAngie.ports.in.CategoryServiceIn;
@@ -24,6 +25,11 @@ public class CategoryServiceImpl implements CategoryServiceIn {
     }
 
     @Override
+    public ProductCategoryDTO createSubCategoryIn(RequestSubCategory requestSubCategory) {
+        return categoryServiceOut.createSubCategoryOut(requestSubCategory);
+    }
+
+    @Override
     public Optional<ResponseCategory> findCategoryByIdIn(Long categoryId) {
         return categoryServiceOut.findCategoryByIdOut(categoryId);
     }
@@ -31,6 +37,11 @@ public class CategoryServiceImpl implements CategoryServiceIn {
     @Override
     public ProductCategoryDTO updateCategoryIn(RequestCategory requestCategory, Long categoryId) {
         return categoryServiceOut.updateCategoryOut(requestCategory, categoryId);
+    }
+
+    @Override
+    public ProductCategoryDTO updateSubCategoryIn(RequestSubCategory requestSubCategory, Long categoryId) {
+        return categoryServiceOut.updateSubCategoryOut(requestSubCategory, categoryId);
     }
 
     @Override

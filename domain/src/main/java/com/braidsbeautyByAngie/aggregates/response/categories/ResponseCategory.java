@@ -6,6 +6,7 @@ import com.braidsbeautyByAngie.aggregates.dto.PromotionDTO;
 import lombok.*;
 
 import java.util.List;
+import java.util.Set;
 
 @Builder
 @AllArgsConstructor
@@ -14,6 +15,7 @@ import java.util.List;
 @Setter
 public class ResponseCategory {
     private ProductCategoryDTO productCategoryDTO;
-    private List<PromotionDTO> promotionDTOList;
+    private List<ResponseSubCategory> responseSubCategoryList;
+    private Set<PromotionDTO> promotionDTOList;
     private List<ProductDTO> productDTOList;
 }

@@ -7,18 +7,23 @@ import lombok.NoArgsConstructor;
 
 import java.util.List;
 
-
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
 @Getter
-public class RequestProduct {
-    private String productName;
-    private String productDescription;
-    private String productPrice;
-    private String productImage;
-    private Long productCategoryId;
+public class RequestItemProduct {
+    private Long productId;
+    private String productItemSKU;
+
+    private String productItemQuantityInStock;
+
+    private String productItemImage;
+
+    private String productItemPrice;
+
     private List<Long> promotionId;
+
     private List <String> variationName;
+
     private List<String> variationOptionValues;
 }

@@ -1,5 +1,6 @@
 package com.braidsbeautyByAngie.aggregates.response.products;
 
+import com.braidsbeautyByAngie.aggregates.dto.ProductDTO;
 import com.braidsbeautyByAngie.aggregates.response.categories.ResponseCategory;
 import lombok.*;
 
@@ -9,7 +10,8 @@ import java.util.List;
 @NoArgsConstructor
 @Getter
 @Setter
-public class ResponseProduct {
-    private List<ResponseItemProduct> responseItemProducts;
-
+public class ResponseItemProduct {
+    private ProductDTO productDTO;
+    private List<ResponseVariation> responseVariationList;
+    private ResponseCategory responseCategory;
 }
