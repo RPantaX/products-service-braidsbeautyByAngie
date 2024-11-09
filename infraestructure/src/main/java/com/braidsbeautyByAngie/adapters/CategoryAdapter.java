@@ -5,9 +5,12 @@ import com.braidsbeautyByAngie.aggregates.dto.ProductCategoryDTO;
 import com.braidsbeautyByAngie.aggregates.dto.ProductDTO;
 import com.braidsbeautyByAngie.aggregates.dto.PromotionDTO;
 import com.braidsbeautyByAngie.aggregates.request.RequestCategory;
+import com.braidsbeautyByAngie.aggregates.request.RequestSubCategory;
 import com.braidsbeautyByAngie.aggregates.response.categories.ResponseCategory;
 import com.braidsbeautyByAngie.aggregates.response.categories.ResponseListPageableCategory;
+import com.braidsbeautyByAngie.aggregates.response.categories.ResponseSubCategory;
 import com.braidsbeautyByAngie.entity.ProductCategoryEntity;
+import com.braidsbeautyByAngie.entity.PromotionEntity;
 import com.braidsbeautyByAngie.mapper.ProductCategoryMapper;
 import com.braidsbeautyByAngie.mapper.ProductMapper;
 import com.braidsbeautyByAngie.mapper.PromotionMapper;
@@ -15,6 +18,7 @@ import com.braidsbeautyByAngie.ports.out.CategoryServiceOut;
 import com.braidsbeautyByAngie.repository.ProductCategoryRepository;
 
 
+import com.braidsbeautyByAngie.repository.PromotionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -24,6 +28,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -34,28 +39,35 @@ public class CategoryAdapter implements CategoryServiceOut {
     private final ProductCategoryMapper productCategoryMapper;
     private final ProductMapper productMapper;
     private final PromotionMapper promotionMapper;
-
+    private final PromotionRepository promotionRepository;
     @Override
     public ProductCategoryDTO createCategoryOut(RequestCategory requestCategory) {
 
-        if (categoryNameExistsByName(requestCategory.getProductCategoryName()) ) throw new RuntimeException("The name of the category or subcategory already exists");
-
+        if (categoryNameExistsByName(requestCategory.getProductCategoryName()) ) throw new RuntimeException("The name of the category already exists");
+        Set<PromotionEntity> promotionEntitySet = (Set<PromotionEntity>) promotionRepository.findAllById(requestCategory.getPromotionListId());
         ProductCategoryEntity productCategoryEntity = ProductCategoryEntity.builder()
                 .productCategoryName(requestCategory.getProductCategoryName())
+                .promotionEntities(promotionEntitySet)
                 .createdAt(Constants.getTimestamp())
                 .state(Constants.STATUS_ACTIVE)
                 .modifiedByUser("prueba")
                 .build();
 
-        //todo: Crear un nuevo list para que se vean todas las categorias.
-        //Verify if is a subcategory.
-//        if(!requestCategory.getProductCategoryParentId().isEmpty()){
-//            Long categoryParentId = requestCategory.getProductCategoryParentId();
-//            Optional<ProductCategoryEntity> productSubcategory = getProductCategoryEntity(categoryParentId);
-//            productCategoryEntity.setParentCategory(productSubcategory.get());
-//        }
-//        return productCategoryMapper.mapCategoryEntityToDTO(productCategoryRepository.save(productCategoryEntity));
-        return null;
+        return productCategoryMapper.mapCategoryEntityToDTO(productCategoryRepository.save(productCategoryEntity));
+    }
+
+    @Override
+    public ProductCategoryDTO createSubCategoryOut(RequestSubCategory requestSubCategory) {
+        if (categoryNameExistsByName(requestSubCategory.getProductSubCategoryName()) ) throw new RuntimeException("The name of the category already exists");
+        Optional<ProductCategoryEntity> productCategoryParent = productCategoryRepository.findById(requestSubCategory.getProductCategoryParentId());
+        ProductCategoryEntity productCategoryEntity = ProductCategoryEntity.builder()
+                .parentCategory(productCategoryParent.get())
+                .productCategoryName(requestSubCategory.getProductSubCategoryName())
+                .createdAt(Constants.getTimestamp())
+                .state(Constants.STATUS_ACTIVE)
+                .modifiedByUser("prueba")
+                .build();
+        return productCategoryMapper.mapCategoryEntityToDTO(productCategoryRepository.save(productCategoryEntity));
     }
 
     @Override
@@ -64,31 +76,48 @@ public class CategoryAdapter implements CategoryServiceOut {
 
         ProductCategoryDTO productCategoryDTO = productCategoryMapper.mapCategoryEntityToDTO(productCategoryEntity.get());
         List<ProductDTO> productDTOList = productMapper.mapProductEntityListToDtoList(productCategoryEntity.get().getProductEntities());
-        List<PromotionDTO> promotionDTOList = promotionMapper.mapPromotionListToDtoList(productCategoryEntity.get().getPromotionEntities());
+        Set<PromotionDTO> promotionDTOList = (Set<PromotionDTO>) promotionMapper.mapPromotionListToDtoList(productCategoryEntity.get().getPromotionEntities());
+
+        // Mapear subcategorías
+        List<ResponseSubCategory> responseSubCategoryList = productCategoryEntity.get().getSubCategories()
+                .stream()
+                .map(subCategoryEntity -> {
+                    ProductCategoryDTO subCategoryDTO = productCategoryMapper.mapCategoryEntityToDTO(subCategoryEntity);
+                    return ResponseSubCategory.builder()
+                            .productCategoryDTO(subCategoryDTO)
+                            .build();
+                })
+                .collect(Collectors.toList());
 
         ResponseCategory responseCategory = ResponseCategory.builder()
                 .productCategoryDTO(productCategoryDTO)
+                .responseSubCategoryList(responseSubCategoryList)
                 .productDTOList(productDTOList)
                 .promotionDTOList(promotionDTOList)
                 .build();
+
         return Optional.ofNullable(responseCategory);
     }
 
     @Override
     public ProductCategoryDTO updateCategoryOut(RequestCategory requestCategory, Long categoryId) {
+
         Optional<ProductCategoryEntity> productCategorySaved = getProductCategoryEntity(categoryId);
+        Set<PromotionEntity> promotionEntitySet = (Set<PromotionEntity>) promotionRepository.findAllById(requestCategory.getPromotionListId());
         productCategorySaved.get().setProductCategoryName(requestCategory.getProductCategoryName());
-        //todo: cambiar el requestCategory, add actualizarnombre, actualizar subcategorias
-        //Verify if has a subcategory.
-//        if(!requestCategory.getProductCategoryParentId().isEmpty()){
-//            Long categoryParentId = requestCategory.getProductCategoryParentId();
-//            Optional<ProductCategoryEntity> productSubcategory = getProductCategoryEntity(categoryParentId);
-//            productCategorySaved.get().setSubCategories(requestCategory.);
-//        }
+        productCategorySaved.get().setPromotionEntities(promotionEntitySet);
+        return productCategoryMapper.mapCategoryEntityToDTO(productCategoryRepository.save(productCategorySaved.get()));
+    }
 
-        ProductCategoryEntity productCategoryEntity1 = productCategoryRepository.save(productCategorySaved.get());
+    @Override
+    public ProductCategoryDTO updateSubCategoryOut(RequestSubCategory requestSubCategory, Long categoryId) {
 
-        return null;
+        Optional<ProductCategoryEntity> productCategoryParent = getProductCategoryEntity(requestSubCategory.getProductCategoryParentId());
+        Optional<ProductCategoryEntity> productSubCategory = getProductCategoryEntity(requestSubCategory.getProductCategoryParentId());
+
+        productSubCategory.get().setProductCategoryName(requestSubCategory.getProductSubCategoryName());
+        productSubCategory.get().setParentCategory(productCategoryParent.get());
+        return productCategoryMapper.mapCategoryEntityToDTO(productCategoryRepository.save(productSubCategory.get()));
     }
 
     @Override
@@ -120,7 +149,7 @@ public class CategoryAdapter implements CategoryServiceOut {
                     return ResponseCategory.builder()
                             .productCategoryDTO(productCategoryDTO)
                             .productDTOList(productDTOList)
-                            .promotionDTOList(promotionDTOList)
+                            .promotionDTOList((Set<PromotionDTO>) promotionDTOList)
                             .build();
                 })
                 .collect(Collectors.toList());
@@ -139,9 +168,11 @@ public class CategoryAdapter implements CategoryServiceOut {
     private boolean categoryNameExistsByName(String categoryName){
         return productCategoryRepository.existsByProductCategoryName(categoryName);
     }
+
     private boolean productCategoryExistsById(Long id){
         return productCategoryRepository.existsById(id);
     }
+
     private Optional<ProductCategoryEntity> getProductCategoryEntity(Long categoryId){
         if (productCategoryExistsById(categoryId) ) throw new RuntimeException("The category or subcategory does not exist.");
         return  productCategoryRepository.findById(categoryId);
