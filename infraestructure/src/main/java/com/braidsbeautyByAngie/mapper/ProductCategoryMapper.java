@@ -16,4 +16,5 @@ public class ProductCategoryMapper {
     public ProductCategoryEntity mapDTOToCategoryEntity(ProductCategoryDTO productCategoryDTO){
         return modelMapper.map(productCategoryDTO, ProductCategoryEntity.class);
     }
+
 }

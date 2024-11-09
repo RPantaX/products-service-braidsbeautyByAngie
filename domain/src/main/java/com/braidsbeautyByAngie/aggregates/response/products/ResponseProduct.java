@@ -16,5 +16,4 @@ public class ResponseProduct {
     private ProductDTO productDTO;
     private List<ResponseVariation> responseVariationList;
     private ResponseCategory responseCategory;
-
 }

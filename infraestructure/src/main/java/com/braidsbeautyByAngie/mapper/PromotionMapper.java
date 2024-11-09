@@ -5,6 +5,10 @@ import com.braidsbeautyByAngie.entity.PromotionEntity;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 @Service
 public class PromotionMapper {
 
@@ -16,5 +20,10 @@ public class PromotionMapper {
 
     PromotionDTO mapPromotionEntityToDto(PromotionEntity promotionEntity){
         return modelMapper.map(promotionEntity, PromotionDTO.class);
+    }
+    public List<PromotionDTO> mapPromotionListToDtoList(Set<PromotionEntity> promotionEntityList) {
+        return promotionEntityList.stream()
+                .map(this::mapPromotionEntityToDto)
+                .collect(Collectors.toList());
     }
 }
