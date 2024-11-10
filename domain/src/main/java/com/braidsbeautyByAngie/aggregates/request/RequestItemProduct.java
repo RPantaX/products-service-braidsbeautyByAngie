@@ -21,9 +21,5 @@ public class RequestItemProduct {
 
     private String productItemPrice;
 
-    private List<Long> promotionId;
-
-    private List <String> variationName;
-
-    private List<String> variationOptionValues;
+    private List <RequestVariationName> variationNames;
 }

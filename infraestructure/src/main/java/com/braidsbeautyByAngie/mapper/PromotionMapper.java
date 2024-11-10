@@ -14,11 +14,11 @@ public class PromotionMapper {
 
     private static final ModelMapper modelMapper = new ModelMapper();
 
-    PromotionEntity mapPromotionDtoToEntity(PromotionDTO promotionDTO){
+    public PromotionEntity mapPromotionDtoToEntity(PromotionDTO promotionDTO){
         return modelMapper.map(promotionDTO, PromotionEntity.class);
     }
 
-    PromotionDTO mapPromotionEntityToDto(PromotionEntity promotionEntity){
+    public PromotionDTO mapPromotionEntityToDto(PromotionEntity promotionEntity){
         return modelMapper.map(promotionEntity, PromotionDTO.class);
     }
     public List<PromotionDTO> mapPromotionListToDtoList(Set<PromotionEntity> promotionEntityList) {

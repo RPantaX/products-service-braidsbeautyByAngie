@@ -13,7 +13,7 @@ public interface PromotionServiceIn {
 
     Optional<ResponsePromotion> findPromotionByIdIn(Long promotionId);
 
-    PromotionDTO updatePromotionIn(Long promotionId, PromotionDTO promotion);
+    PromotionDTO updatePromotionIn(Long promotionId, RequestPromotion requestPromotion);
 
     PromotionDTO deletePromotionIn(Long promotionId);
 

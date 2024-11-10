@@ -14,11 +14,11 @@ public interface ProductServiceIn {
 
     ProductDTO createProductIn(RequestProduct requestProduct);
 
-    Optional<ResponseProduct> findProductByIdIn(String productId);
+    Optional<ResponseProduct> findProductByIdIn(Long productId);
 
-    ProductDTO updateProductIn(String productId, RequestProduct requestProduct);
+    ProductDTO updateProductIn(Long productId, RequestProduct requestProduct);
 
-    ProductDTO deleteProductIn(String productId);
+    ProductDTO deleteProductIn(Long productId);
 
     ResponseListPageableProduct listProductPageableIn(int pageNumber, int pageSize, String orderBy, String sortDir);
 }

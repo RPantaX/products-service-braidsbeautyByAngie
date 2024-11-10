@@ -12,7 +12,7 @@ public interface PromotionServiceOut {
 
     Optional<ResponsePromotion> findPromotionByIdOut(Long promotionId);
 
-    PromotionDTO updatePromotionOut(Long promotionId, PromotionDTO promotion);
+    PromotionDTO updatePromotionOut(Long promotionId, RequestPromotion requestPromotion);
 
     PromotionDTO deletePromotionOut(Long promotionId);
 

@@ -6,4 +6,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface ProductItemRepository extends JpaRepository<ProductItemEntity, Long> {
+    boolean existsByProductItemSKU(String sku);
 }

@@ -10,11 +10,11 @@ public class VariationMapper {
 
     private static final ModelMapper modelMapper = new ModelMapper();
 
-    VariationEntity mapVariationDtoToEntity(VariationDTO variationDTO) {
+    public VariationEntity mapVariationDtoToEntity(VariationDTO variationDTO) {
         return modelMapper.map(variationDTO, VariationEntity.class);
     }
 
-    VariationDTO mapVariationEntityToDto(VariationEntity variationEntity) {
+    public VariationDTO mapVariationEntityToDto(VariationEntity variationEntity) {
         return modelMapper.map(variationEntity, VariationDTO.class);
     }
 }

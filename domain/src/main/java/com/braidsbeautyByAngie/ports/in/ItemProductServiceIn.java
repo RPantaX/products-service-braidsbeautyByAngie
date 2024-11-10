@@ -10,11 +10,11 @@ public interface ItemProductServiceIn {
 
     ProductItemDTO createItemProductIn(RequestItemProduct requestItemProduct);
 
-    Optional<ResponseItemProduct> findItemProductByIdIn(String itemProductId);
+    Optional<ResponseItemProduct> findItemProductByIdIn(Long itemProductId);
 
-    ProductItemDTO updateItemProductIn(String itemProductId, RequestItemProduct requestItemProduct);
+    ProductItemDTO updateItemProductIn(Long itemProductId, RequestItemProduct requestItemProduct);
 
-    ProductItemDTO deleteItemProductIn(String itemProductId);
+    ProductItemDTO deleteItemProductIn(Long itemProductId);
 
 
 }

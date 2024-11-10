@@ -9,9 +9,9 @@ import java.util.Optional;
 public interface ItemProductServiceOut {
     ProductItemDTO createItemProductOut(RequestItemProduct requestItemProduct);
 
-    Optional<ResponseItemProduct> findItemProductByIdOut(String itemProductId);
+    Optional<ResponseItemProduct> findItemProductByIdOut(Long itemProductId);
 
-    ProductItemDTO updateItemProductOut(String itemProductId, RequestItemProduct requestItemProduct);
+    ProductItemDTO updateItemProductOut(Long itemProductId, RequestItemProduct requestItemProduct);
 
-    ProductItemDTO deleteItemProductOut(String itemProductId);
+    ProductItemDTO deleteItemProductOut(Long itemProductId);
 }

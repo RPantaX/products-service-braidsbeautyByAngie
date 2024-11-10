@@ -28,8 +28,8 @@ public class PromotionServiceImpl implements PromotionServiceIn {
     }
 
     @Override
-    public PromotionDTO updatePromotionIn(Long promotionId, PromotionDTO promotion) {
-        return promotionServiceOut.updatePromotionOut(promotionId, promotion);
+    public PromotionDTO updatePromotionIn(Long promotionId, RequestPromotion requestPromotion) {
+        return promotionServiceOut.updatePromotionOut(promotionId, requestPromotion);
     }
 
     @Override

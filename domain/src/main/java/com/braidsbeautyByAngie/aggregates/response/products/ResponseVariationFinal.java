@@ -11,6 +11,7 @@ import java.util.List;
 @NoArgsConstructor
 @Getter
 @Setter
-public class ResponseVariation {
-    private List<ResponseVariationFinal> responseVariationFinals;
+public class ResponseVariationFinal {
+    private List<VariationOptionDTO> variationOptionDTOList;
+    private VariationDTO variationDTO;
 }

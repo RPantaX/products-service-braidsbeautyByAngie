@@ -174,7 +174,7 @@ public class CategoryAdapter implements CategoryServiceOut {
     }
 
     private Optional<ProductCategoryEntity> getProductCategoryEntity(Long categoryId){
-        if (productCategoryExistsById(categoryId) ) throw new RuntimeException("The category or subcategory does not exist.");
+        if ( !productCategoryExistsById(categoryId) ) throw new RuntimeException("The category or subcategory does not exist.");
         return  productCategoryRepository.findById(categoryId);
     }
 }

@@ -24,17 +24,17 @@ public class ProductsServiceImpl implements ProductServiceIn {
     }
 
     @Override
-    public Optional<ResponseProduct> findProductByIdIn(String productId) {
+    public Optional<ResponseProduct> findProductByIdIn(Long productId) {
         return productServiceOut.findProductByIdOut(productId);
     }
 
     @Override
-    public ProductDTO updateProductIn(String productId, RequestProduct requestProduct) {
+    public ProductDTO updateProductIn(Long productId, RequestProduct requestProduct) {
         return productServiceOut.updateProductOut(productId, requestProduct);
     }
 
     @Override
-    public ProductDTO deleteProductIn(String productId) {
+    public ProductDTO deleteProductIn(Long productId) {
         return productServiceOut.deleteProductOut(productId);
     }
 

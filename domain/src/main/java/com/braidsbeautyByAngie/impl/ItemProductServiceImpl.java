@@ -22,17 +22,17 @@ public class ItemProductServiceImpl implements ItemProductServiceIn {
     }
 
     @Override
-    public Optional<ResponseItemProduct> findItemProductByIdIn(String itemProductId) {
+    public Optional<ResponseItemProduct> findItemProductByIdIn(Long itemProductId) {
         return itemProductServiceOut.findItemProductByIdOut(itemProductId);
     }
 
     @Override
-    public ProductItemDTO updateItemProductIn(String itemProductId, RequestItemProduct requestItemProduct) {
+    public ProductItemDTO updateItemProductIn(Long itemProductId, RequestItemProduct requestItemProduct) {
         return itemProductServiceOut.updateItemProductOut(itemProductId, requestItemProduct);
     }
 
     @Override
-    public ProductItemDTO deleteItemProductIn(String itemProductId) {
+    public ProductItemDTO deleteItemProductIn(Long itemProductId) {
         return itemProductServiceOut.deleteItemProductOut(itemProductId);
     }
 }

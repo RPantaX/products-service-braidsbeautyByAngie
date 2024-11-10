@@ -11,11 +11,11 @@ public interface ProductServiceOut {
 
     ProductDTO createProductOut(RequestProduct requestProduct);
 
-    Optional<ResponseProduct> findProductByIdOut(String productId);
+    Optional<ResponseProduct> findProductByIdOut(Long productId);
 
-    ProductDTO updateProductOut(String productId, RequestProduct requestProduct);
+    ProductDTO updateProductOut(Long productId, RequestProduct requestProduct);
 
-    ProductDTO deleteProductOut(String productId);
+    ProductDTO deleteProductOut(Long productId);
 
     ResponseListPageableProduct listProductPageableOut(int pageNumber, int pageSize, String orderBy, String sortDir);
 }
