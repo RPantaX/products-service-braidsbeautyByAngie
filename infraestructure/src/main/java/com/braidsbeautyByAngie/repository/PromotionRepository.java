@@ -14,10 +14,10 @@ import java.util.Optional;
 public interface PromotionRepository extends JpaRepository<PromotionEntity, Long> {
     boolean existsByPromotionName(String name);
 
-    @Query(value = "SELECT CASE WHEN COUNT(p) > 0 THEN true ELSE false END FROM PromotionEntity p WHERE p.promotionId = :id AND p.state = true")
+    @Query(value = "SELECT CASE WHEN COUNT(p) > 0 THEN true ELSE false END FROM PromotionEntity p WHERE p.promotionId = :promotionId AND p.state = true")
     boolean existsByPromotionIdAndStateTrue(Long promotionId);
 
-    @Query("SELECT p FROM PromotionEntity p WHERE p.promotionId = :id AND p.state = true")
+    @Query("SELECT p FROM PromotionEntity p WHERE p.promotionId = :promotionId AND p.state = true")
     Optional<PromotionEntity> findPromotionByIdWithStateTrue(Long promotionId);
 
     @Query(value = "SELECT p FROM PromotionEntity p WHERE p.promotionId IN :promotionIdList AND p.state = true")
