@@ -18,6 +18,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -42,10 +43,11 @@ public class PromotionAdapter implements PromotionServiceOut {
                 .modifiedByUser("TEST")
                 .state(Constants.STATUS_ACTIVE)
                 .build();
-        return promotionMapper.mapPromotionEntityToDto(promotionEntity);
+        return promotionMapper.mapPromotionEntityToDto(promotionRepository.save(promotionEntity));
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Optional<ResponsePromotion> findPromotionByIdOut(Long promotionId) {
         PromotionEntity promotionEntity = getPromotionEntity(promotionId).get();
 
@@ -77,14 +79,18 @@ public class PromotionAdapter implements PromotionServiceOut {
         promotionEntityOptional.setModifiedByUser("TEST");
         promotionEntityOptional.setDeletedAt(Constants.getTimestamp());
         promotionEntityOptional.setState(Constants.STATUS_INACTIVE);
-        return promotionMapper.mapPromotionEntityToDto(promotionEntityOptional);
+        return promotionMapper.mapPromotionEntityToDto(promotionRepository.save(promotionEntityOptional));
     }
 
     @Override
+    @Transactional(readOnly = true)
     public ResponseListPageablePromotion listPromotionByPageOut(int pageNumber, int pageSize, String orderBy, String sortDir) {
         Sort sort = sortDir.equalsIgnoreCase(Sort.Direction.ASC.name()) ? Sort.by(orderBy).ascending() : Sort.by(orderBy).descending();
         Pageable pageable = PageRequest.of(pageNumber, pageSize, sort);
-        Page<PromotionEntity> promotionEntityPage = promotionRepository.findAll(pageable);
+
+        if (promotionRepository.findAllByStateTrueAmdPageable(pageable).isEmpty()) return null;
+
+        Page<PromotionEntity> promotionEntityPage = promotionRepository.findAllByStateTrueAmdPageable(pageable);
 
         List<ResponsePromotion> responsePromotionList = promotionEntityPage.getContent().stream().map(promotionEntity -> {
             // Convertir cada PromotionEntity a ResponsePromotion
@@ -112,10 +118,10 @@ public class PromotionAdapter implements PromotionServiceOut {
         return promotionRepository.existsByPromotionName(promotionName);
     }
     private boolean promotionExistById(Long promotionId) {
-        return promotionRepository.existsById(promotionId);
+        return promotionRepository.existsByPromotionIdAndStateTrue(promotionId);
     }
     private Optional<PromotionEntity> getPromotionEntity(Long promotionId) {
         if (!promotionExistById(promotionId)) throw new RuntimeException("The promotion does not exist.");
-        return promotionRepository.findById(promotionId);
+        return promotionRepository.findPromotionByIdWithStateTrue(promotionId);
     }
 }
