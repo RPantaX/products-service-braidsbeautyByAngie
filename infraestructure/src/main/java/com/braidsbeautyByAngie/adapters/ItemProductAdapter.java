@@ -3,7 +3,6 @@ package com.braidsbeautyByAngie.adapters;
 import com.braidsbeautyByAngie.aggregates.constants.Constants;
 import com.braidsbeautyByAngie.aggregates.dto.ProductItemDTO;
 import com.braidsbeautyByAngie.aggregates.dto.PromotionDTO;
-import com.braidsbeautyByAngie.aggregates.dto.VariationOptionDTO;
 import com.braidsbeautyByAngie.aggregates.request.RequestItemProduct;
 import com.braidsbeautyByAngie.aggregates.request.RequestVariationName;
 import com.braidsbeautyByAngie.aggregates.response.categories.ResponseCategory;
@@ -20,7 +19,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 @Service
@@ -31,12 +29,10 @@ public class ItemProductAdapter implements ItemProductServiceOut {
     private final PromotionMapper promotionMapper;
     private final VariationMapper variationMapper;
     private final VariationOptionMapper variationOptionMapper;
-    private final ProductItemMapper productItemMapper; ;
+    private final ProductItemMapper productItemMapper;
 
     private final ProductItemRepository productItemRepository;
     private final ProductRepository productRepository;
-    private final ProductCategoryRepository productCategoryRepository;
-    private final PromotionRepository promotionRepository;
     private final VariationRepository variationRepository;
     private final VariationOptionRepository variationOptionRepository;
 

@@ -2,7 +2,8 @@ package com.braidsbeautyByAngie.aggregates.dto;
 
 import lombok.*;
 
-import java.security.Timestamp;
+import java.sql.Timestamp;
+
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -27,9 +28,9 @@ public class PromotionDTO {
 
     private String modifiedByUser;
 
-    private java.sql.Timestamp createdAt;
+    private Timestamp createdAt;
 
-    private java.sql.Timestamp modifiedAt;
+    private Timestamp modifiedAt;
 
-    private java.sql.Timestamp deletedAt;
+    private Timestamp deletedAt;
 }

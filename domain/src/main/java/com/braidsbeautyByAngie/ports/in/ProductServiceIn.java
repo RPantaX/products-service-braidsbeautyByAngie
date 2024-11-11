@@ -1,10 +1,7 @@
 package com.braidsbeautyByAngie.ports.in;
 
 import com.braidsbeautyByAngie.aggregates.dto.ProductDTO;
-import com.braidsbeautyByAngie.aggregates.dto.ProductItemDTO;
-import com.braidsbeautyByAngie.aggregates.request.RequestItemProduct;
 import com.braidsbeautyByAngie.aggregates.request.RequestProduct;
-import com.braidsbeautyByAngie.aggregates.response.products.ResponseItemProduct;
 import com.braidsbeautyByAngie.aggregates.response.products.ResponseListPageableProduct;
 import com.braidsbeautyByAngie.aggregates.response.products.ResponseProduct;
 

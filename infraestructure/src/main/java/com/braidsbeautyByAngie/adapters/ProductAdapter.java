@@ -40,11 +40,12 @@ public class ProductAdapter implements ProductServiceOut {
     @Transactional
     @Override
     public ProductDTO createProductOut(RequestProduct requestProduct) {
-        //todo: validar el nombre de producto
-        if (!productCategoryRepository.existsById(requestProduct.getProductCategoryId())) throw new RuntimeException("Category not found");
-        ProductCategoryEntity productCategoryEntity = productCategoryRepository.findById(requestProduct.getProductCategoryId()).get();
+
+        if(productNameExistsByName(requestProduct.getProductName())) throw new RuntimeException("The product name already exists");
+        if (!productCategoryRepository.existByProductCategoryIdAndStateTrue(requestProduct.getProductCategoryId())) throw new RuntimeException("Category not found");
+        ProductCategoryEntity productCategoryEntity = productCategoryRepository.findProductCategoryIdAndStateTrue(requestProduct.getProductCategoryId()).get();
         //todo: validar la existencia por id de las promociones
-        List<PromotionEntity> promotionEntityList= promotionRepository.findAllById(requestProduct.getPromotionId());
+        List<PromotionEntity> promotionEntityList= promotionRepository.findAllByPromotionIdAndStateTrue(requestProduct.getPromotionId());
         productCategoryEntity.setPromotionEntities((Set<PromotionEntity>) promotionEntityList);
         //add promotiones to our repository
         ProductCategoryEntity productCategorySaved = productCategoryRepository.save(productCategoryEntity);
@@ -63,6 +64,7 @@ public class ProductAdapter implements ProductServiceOut {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Optional<ResponseProduct> findProductByIdOut(Long productId) {
         Optional<ProductEntity> productEntityOpt = getProductEntity(productId);
         if (productEntityOpt.isEmpty()) {
@@ -128,11 +130,11 @@ public class ProductAdapter implements ProductServiceOut {
     @Override
     public ProductDTO updateProductOut(Long productId, RequestProduct requestProduct) {
         Optional<ProductEntity> productEntitySaved = getProductEntity(productId);
-        //todo: validar el nombre de producto
-        if (!productCategoryRepository.existsById(requestProduct.getProductCategoryId())) throw new RuntimeException("Category not found");
-        ProductCategoryEntity productCategoryEntity = productCategoryRepository.findById(requestProduct.getProductCategoryId()).get();
+        if(!productEntitySaved.get().getProductName().equalsIgnoreCase(requestProduct.getProductName()) && productNameExistsByName(requestProduct.getProductName())) {throw new RuntimeException("The product name already exists");}
+        if (!productCategoryRepository.existByProductCategoryIdAndStateTrue(requestProduct.getProductCategoryId())) throw new RuntimeException("Category not found");
+        ProductCategoryEntity productCategoryEntity = productCategoryRepository.findProductCategoryIdAndStateTrue(requestProduct.getProductCategoryId()).get();
         //todo: validar la existencia por id de las promociones
-        List<PromotionEntity> promotionEntityList= promotionRepository.findAllById(requestProduct.getPromotionId());
+        List<PromotionEntity> promotionEntityList= promotionRepository.findAllByPromotionIdAndStateTrue(requestProduct.getPromotionId());
         productCategoryEntity.setPromotionEntities((Set<PromotionEntity>) promotionEntityList);
         //add promotiones to our repository
         ProductCategoryEntity productCategorySaved = productCategoryRepository.save(productCategoryEntity);
@@ -159,11 +161,15 @@ public class ProductAdapter implements ProductServiceOut {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public ResponseListPageableProduct listProductPageableOut(int pageNumber, int pageSize, String orderBy, String sortDir) {
+
         Sort sort = sortDir.equalsIgnoreCase(Sort.Direction.ASC.name()) ? Sort.by(orderBy).ascending() : Sort.by(orderBy).descending();
         Pageable pageable = PageRequest.of(pageNumber, pageSize, sort);
-        Page<ProductEntity> productEntityPage = productRepository.findAll(pageable);
 
+        if (productRepository.findAllByStateTrueAndPageable(pageable).isEmpty()) return null;
+
+        Page<ProductEntity> productEntityPage = productRepository.findAllByStateTrueAndPageable(pageable);
         List<ResponseProduct> responseProductList = productEntityPage.getContent().stream()
                 .map(productEntity -> {
                     List<ResponseSubCategory> subCategoryList = productEntity.getProductCategoryEntity().getSubCategories()
@@ -226,12 +232,12 @@ public class ProductAdapter implements ProductServiceOut {
                 .end(productEntityPage.isLast())
                 .build();
     }
-
+    private boolean productNameExistsByName(String productName){ return productRepository.existsByProductName(productName); }
     private boolean productExistsById(Long productId) {
-        return productRepository.existsById(productId);
+        return productRepository.existsByProductIdWithStateTrue(productId);
     }
     private Optional<ProductEntity> getProductEntity(Long productId) {
         if(!productExistsById(productId)) throw new RuntimeException("The product does not exist.");
-        return productRepository.findById(productId);
+        return productRepository.findProductByProductIdWithStateTrue(productId);
     }
 }

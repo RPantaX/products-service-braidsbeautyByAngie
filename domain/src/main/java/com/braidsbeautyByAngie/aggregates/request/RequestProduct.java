@@ -15,7 +15,6 @@ import java.util.List;
 public class RequestProduct {
     private String productName;
     private String productDescription;
-    private String productPrice;
     private String productImage;
     private Long productCategoryId;
     private List<Long> promotionId;

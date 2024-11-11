@@ -25,7 +25,9 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -40,18 +42,26 @@ public class CategoryAdapter implements CategoryServiceOut {
     private final ProductMapper productMapper;
     private final PromotionMapper promotionMapper;
     private final PromotionRepository promotionRepository;
+
     @Override
+    @Transactional
     public ProductCategoryDTO createCategoryOut(RequestCategory requestCategory) {
 
         if (categoryNameExistsByName(requestCategory.getProductCategoryName()) ) throw new RuntimeException("The name of the category already exists");
-        Set<PromotionEntity> promotionEntitySet = (Set<PromotionEntity>) promotionRepository.findAllById(requestCategory.getPromotionListId());
+
+
         ProductCategoryEntity productCategoryEntity = ProductCategoryEntity.builder()
                 .productCategoryName(requestCategory.getProductCategoryName())
-                .promotionEntities(promotionEntitySet)
                 .createdAt(Constants.getTimestamp())
                 .state(Constants.STATUS_ACTIVE)
                 .modifiedByUser("prueba")
                 .build();
+        //validation if promotions exists
+        if (!requestCategory.getPromotionListId().isEmpty()) {
+            Set<PromotionEntity> promotionEntitySet = new HashSet<>(promotionRepository.findAllByPromotionIdAndStateTrue(requestCategory.getPromotionListId()));
+            productCategoryEntity.setPromotionEntities(promotionEntitySet);
+        }
+
 
         return productCategoryMapper.mapCategoryEntityToDTO(productCategoryRepository.save(productCategoryEntity));
     }
@@ -71,12 +81,13 @@ public class CategoryAdapter implements CategoryServiceOut {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Optional<ResponseCategory> findCategoryByIdOut(Long categoryId) {
         Optional<ProductCategoryEntity> productCategoryEntity = getProductCategoryEntity(categoryId);
 
         ProductCategoryDTO productCategoryDTO = productCategoryMapper.mapCategoryEntityToDTO(productCategoryEntity.get());
         List<ProductDTO> productDTOList = productMapper.mapProductEntityListToDtoList(productCategoryEntity.get().getProductEntities());
-        Set<PromotionDTO> promotionDTOList = (Set<PromotionDTO>) promotionMapper.mapPromotionListToDtoList(productCategoryEntity.get().getPromotionEntities());
+        Set<PromotionDTO> promotionDTOList = new HashSet<>(promotionMapper.mapPromotionListToDtoList(productCategoryEntity.get().getPromotionEntities()));
 
         // Mapear subcategorías
         List<ResponseSubCategory> responseSubCategoryList = productCategoryEntity.get().getSubCategories()
@@ -100,10 +111,11 @@ public class CategoryAdapter implements CategoryServiceOut {
     }
 
     @Override
+    @Transactional
     public ProductCategoryDTO updateCategoryOut(RequestCategory requestCategory, Long categoryId) {
 
         Optional<ProductCategoryEntity> productCategorySaved = getProductCategoryEntity(categoryId);
-        Set<PromotionEntity> promotionEntitySet = (Set<PromotionEntity>) promotionRepository.findAllById(requestCategory.getPromotionListId());
+        Set<PromotionEntity> promotionEntitySet = new HashSet<>(promotionRepository.findAllByPromotionIdAndStateTrue(requestCategory.getPromotionListId()));
         productCategorySaved.get().setProductCategoryName(requestCategory.getProductCategoryName());
         productCategorySaved.get().setPromotionEntities(promotionEntitySet);
         return productCategoryMapper.mapCategoryEntityToDTO(productCategoryRepository.save(productCategorySaved.get()));
@@ -130,10 +142,12 @@ public class CategoryAdapter implements CategoryServiceOut {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public ResponseListPageableCategory listCategoryPageableOut(int pageNumber, int pageSize, String orderBy, String sortDir) {
+        if (productCategoryRepository.findAll().isEmpty()) return null;
         Sort sort = sortDir.equalsIgnoreCase(Sort.Direction.ASC.name()) ? Sort.by(orderBy).ascending() : Sort.by(orderBy).descending();
         Pageable pageable = PageRequest.of(pageNumber, pageSize, sort);
-        Page<ProductCategoryEntity> page = productCategoryRepository.findAll(pageable);
+        Page<ProductCategoryEntity> page = productCategoryRepository.findAllCategoriesPageableAndStatusTrue(pageable);
 
         // Mapear cada ProductCategoryEntity a un ResponseCategory, incluyendo ProductDTO y PromotionDTO
         List<ResponseCategory> responseCategoryList = page.getContent().stream()
@@ -145,11 +159,19 @@ public class CategoryAdapter implements CategoryServiceOut {
                     List<ProductDTO> productDTOList = productMapper.mapProductEntityListToDtoList(productCategoryEntity.getProductEntities());
                     List<PromotionDTO> promotionDTOList = promotionMapper.mapPromotionListToDtoList(productCategoryEntity.getPromotionEntities());
 
+                    // Mapear subcategorías a ResponseSubCategory
+                    List<ResponseSubCategory> responseSubCategoryList = productCategoryEntity.getSubCategories().stream()
+                            .map(subCategoryEntity -> ResponseSubCategory.builder()
+                                    .productCategoryDTO(productCategoryMapper.mapCategoryEntityToDTO(subCategoryEntity))
+                                    .build())
+                            .collect(Collectors.toList());
+
                     // Crear y retornar el ResponseCategory
                     return ResponseCategory.builder()
                             .productCategoryDTO(productCategoryDTO)
                             .productDTOList(productDTOList)
-                            .promotionDTOList((Set<PromotionDTO>) promotionDTOList)
+                            .responseSubCategoryList(responseSubCategoryList)
+                            .promotionDTOList(promotionDTOList.stream().collect(Collectors.toSet()))
                             .build();
                 })
                 .collect(Collectors.toList());
@@ -170,11 +192,11 @@ public class CategoryAdapter implements CategoryServiceOut {
     }
 
     private boolean productCategoryExistsById(Long id){
-        return productCategoryRepository.existsById(id);
+        return productCategoryRepository.existByProductCategoryIdAndStateTrue(id);
     }
 
     private Optional<ProductCategoryEntity> getProductCategoryEntity(Long categoryId){
         if ( !productCategoryExistsById(categoryId) ) throw new RuntimeException("The category or subcategory does not exist.");
-        return  productCategoryRepository.findById(categoryId);
+        return  productCategoryRepository.findProductCategoryIdAndStateTrue(categoryId);
     }
 }
