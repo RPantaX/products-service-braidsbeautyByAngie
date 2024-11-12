@@ -39,7 +39,7 @@ public class ProductItemEntity {
     private Long shoppingCartItemId;
 
     @ManyToOne(optional = false)
-    @JoinColumn(name = "Product_ID", insertable = false, updatable = false)
+    @JoinColumn(name = "Product_ID")
     private ProductEntity productEntity;
 
     @ManyToMany(fetch = FetchType.EAGER, targetEntity = VariationOptionEntity.class, cascade = CascadeType.PERSIST)

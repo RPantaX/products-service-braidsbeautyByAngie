@@ -30,11 +30,11 @@ public class ProductEntity {
     @Column(name = "Product_Image", nullable = true)
     private String productImage;
 
-    @ManyToOne(optional = false)
-    @JoinColumn(name = "Product_Category_ID", insertable = false, updatable = false)
+    @ManyToOne(optional = true)
+    @JoinColumn(name = "Product_Category_ID")
     private ProductCategoryEntity productCategoryEntity;
 
-    @OneToMany(mappedBy = "productEntity", cascade = CascadeType.ALL) //Cascade en hibernate significa que cualquier operacion que le hagamos al producto también será para todos los objetos relacionados.
+    @OneToMany(mappedBy = "productEntity", cascade = CascadeType.ALL, fetch = FetchType.EAGER) //Cascade en hibernate significa que cualquier operacion que le hagamos al producto también será para todos los objetos relacionados.
     private List<ProductItemEntity> productItemEntities= new ArrayList<>();
 
     @Column(name = "state", nullable = false)

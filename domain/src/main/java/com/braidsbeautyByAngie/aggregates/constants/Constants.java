@@ -17,5 +17,13 @@ public class Constants {
         long currentTime = System.currentTimeMillis();
         return new Timestamp(currentTime);
     }
+    public static StringBuilder parametersForLogger(int pageNumber, int pageSize, String orderBy, String sortDir){
+        StringBuilder parameters = new StringBuilder();
+        parameters.append("pageNumber=").append(pageNumber);
+        parameters.append("&pageSize=").append(pageSize);
+        parameters.append("&orderBy=").append(orderBy);
+        parameters.append("&sortDir=").append(sortDir);
+        return parameters;
+    }
 
 }

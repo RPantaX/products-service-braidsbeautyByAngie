@@ -23,8 +23,8 @@ public class VariationOptionEntity {
     @Column(name = "Variation_Option_Value", nullable = false)
     private String variationOptionValue;
 
-    @ManyToOne(optional = false)
-    @JoinColumn(name = "Variation_ID", insertable = false, updatable = false)
+    @ManyToOne(optional = true)
+    @JoinColumn(name = "Variation_ID")
     private VariationEntity variationEntity;
 
     @ManyToMany(fetch = FetchType.EAGER, targetEntity = ProductItemEntity.class, cascade = CascadeType.PERSIST)

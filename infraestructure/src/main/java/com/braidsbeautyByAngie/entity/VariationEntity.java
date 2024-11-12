@@ -24,8 +24,8 @@ public class VariationEntity {
     @Column(name = "Variation_Name", nullable = false)
     private String variationName;
 
-    @ManyToOne(optional = false)
-    @JoinColumn(name = "Product_Category_ID", insertable = false, updatable = false)
+    @ManyToOne(optional = true)
+    @JoinColumn(name = "Product_Category_ID")
     private ProductCategoryEntity productCategoryEntity;
 
     @OneToMany(mappedBy = "variationEntity", cascade = CascadeType.ALL) //Cascade en hibernate significa que cualquier operacion que le hagamos al producto también será para todos los objetos relacionados.

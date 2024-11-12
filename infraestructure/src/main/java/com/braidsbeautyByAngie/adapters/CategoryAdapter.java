@@ -20,6 +20,10 @@ import com.braidsbeautyByAngie.repository.ProductCategoryRepository;
 
 import com.braidsbeautyByAngie.repository.PromotionRepository;
 import lombok.RequiredArgsConstructor;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -38,15 +42,19 @@ import java.util.stream.Collectors;
 public class CategoryAdapter implements CategoryServiceOut {
 
     private final ProductCategoryRepository productCategoryRepository;
+    private final PromotionRepository promotionRepository;
+
     private final ProductCategoryMapper productCategoryMapper;
     private final ProductMapper productMapper;
     private final PromotionMapper promotionMapper;
-    private final PromotionRepository promotionRepository;
+
+    private static final Logger logger = LoggerFactory.getLogger(CategoryAdapter.class);
 
     @Override
     @Transactional
     public ProductCategoryDTO createCategoryOut(RequestCategory requestCategory) {
 
+        logger.info("Creating category with name: {}", requestCategory.getProductCategoryName());
         if (categoryNameExistsByName(requestCategory.getProductCategoryName()) ) throw new RuntimeException("The name of the category already exists");
 
 
@@ -61,13 +69,14 @@ public class CategoryAdapter implements CategoryServiceOut {
             Set<PromotionEntity> promotionEntitySet = new HashSet<>(promotionRepository.findAllByPromotionIdAndStateTrue(requestCategory.getPromotionListId()));
             productCategoryEntity.setPromotionEntities(promotionEntitySet);
         }
-
-
-        return productCategoryMapper.mapCategoryEntityToDTO(productCategoryRepository.save(productCategoryEntity));
+        ProductCategoryEntity productCategory = productCategoryRepository.save(productCategoryEntity);
+        logger.info("Category '{}' created successfully with ID: {}",productCategory.getProductCategoryName(),productCategory.getProductCategoryId());
+        return productCategoryMapper.mapCategoryEntityToDTO(productCategory);
     }
 
     @Override
     public ProductCategoryDTO createSubCategoryOut(RequestSubCategory requestSubCategory) {
+        logger.info("Creating subcategory with name: {}", requestSubCategory.getProductSubCategoryName());
         if (categoryNameExistsByName(requestSubCategory.getProductSubCategoryName()) ) throw new RuntimeException("The name of the category already exists");
         Optional<ProductCategoryEntity> productCategoryParent = productCategoryRepository.findById(requestSubCategory.getProductCategoryParentId());
         ProductCategoryEntity productCategoryEntity = ProductCategoryEntity.builder()
@@ -77,12 +86,15 @@ public class CategoryAdapter implements CategoryServiceOut {
                 .state(Constants.STATUS_ACTIVE)
                 .modifiedByUser("prueba")
                 .build();
-        return productCategoryMapper.mapCategoryEntityToDTO(productCategoryRepository.save(productCategoryEntity));
+        ProductCategoryEntity productSubCategorySaved = productCategoryRepository.save(productCategoryEntity);
+        logger.info("SubCategory '{}' created successfully with ID: {}",productSubCategorySaved.getProductCategoryName(),productSubCategorySaved.getProductCategoryId());
+        return productCategoryMapper.mapCategoryEntityToDTO(productSubCategorySaved);
     }
 
     @Override
     @Transactional(readOnly = true)
     public Optional<ResponseCategory> findCategoryByIdOut(Long categoryId) {
+        logger.info("Searching for Category with ID: {}", categoryId);
         Optional<ProductCategoryEntity> productCategoryEntity = getProductCategoryEntity(categoryId);
 
         ProductCategoryDTO productCategoryDTO = productCategoryMapper.mapCategoryEntityToDTO(productCategoryEntity.get());
@@ -106,44 +118,54 @@ public class CategoryAdapter implements CategoryServiceOut {
                 .productDTOList(productDTOList)
                 .promotionDTOList(promotionDTOList)
                 .build();
-
+        logger.info("Category with ID {} found", categoryId);
         return Optional.ofNullable(responseCategory);
     }
 
     @Override
     @Transactional
     public ProductCategoryDTO updateCategoryOut(RequestCategory requestCategory, Long categoryId) {
-
+        logger.info("Searching for update category with ID: {}", categoryId);
         Optional<ProductCategoryEntity> productCategorySaved = getProductCategoryEntity(categoryId);
         Set<PromotionEntity> promotionEntitySet = new HashSet<>(promotionRepository.findAllByPromotionIdAndStateTrue(requestCategory.getPromotionListId()));
         productCategorySaved.get().setProductCategoryName(requestCategory.getProductCategoryName());
         productCategorySaved.get().setPromotionEntities(promotionEntitySet);
-        return productCategoryMapper.mapCategoryEntityToDTO(productCategoryRepository.save(productCategorySaved.get()));
+
+        ProductCategoryEntity productCategoryUpdated = productCategoryRepository.save(productCategorySaved.get());
+        logger.info("Category updated with ID: {}",productCategoryUpdated.getProductCategoryId());
+        return productCategoryMapper.mapCategoryEntityToDTO(productCategoryUpdated);
     }
 
     @Override
     public ProductCategoryDTO updateSubCategoryOut(RequestSubCategory requestSubCategory, Long categoryId) {
-
-        Optional<ProductCategoryEntity> productCategoryParent = getProductCategoryEntity(requestSubCategory.getProductCategoryParentId());
-        Optional<ProductCategoryEntity> productSubCategory = getProductCategoryEntity(requestSubCategory.getProductCategoryParentId());
-
+        logger.info("Searching for update subcategory with ID: {}", categoryId);
+        Optional<ProductCategoryEntity> productSubCategory = getProductCategoryEntity(categoryId);
         productSubCategory.get().setProductCategoryName(requestSubCategory.getProductSubCategoryName());
-        productSubCategory.get().setParentCategory(productCategoryParent.get());
-        return productCategoryMapper.mapCategoryEntityToDTO(productCategoryRepository.save(productSubCategory.get()));
+
+        ProductCategoryEntity productCategoryUpdated = productCategoryRepository.save(productSubCategory.get());
+        logger.info("subcategory updated with ID: {}", productCategoryUpdated.getProductCategoryId());
+
+        return productCategoryMapper.mapCategoryEntityToDTO(productCategoryUpdated);
     }
 
     @Override
     public ProductCategoryDTO deleteCategoryOut(Long categoryId) {
+        logger.info("Searching category for delete with ID: {}", categoryId);
         Optional<ProductCategoryEntity> productCategorySaved = getProductCategoryEntity(categoryId);
         productCategorySaved.get().setState(Constants.STATUS_INACTIVE);
         productCategorySaved.get().setModifiedByUser("PRUEBA");
         productCategorySaved.get().setDeletedAt(Constants.getTimestamp());
-        return productCategoryMapper.mapCategoryEntityToDTO(productCategoryRepository.save(productCategorySaved.get()));
+
+        ProductCategoryEntity productCategoryDeleted = productCategoryRepository.save(productCategorySaved.get());
+        logger.info("Category deleted with ID: {}", categoryId);
+        return productCategoryMapper.mapCategoryEntityToDTO(productCategoryDeleted);
     }
 
     @Override
     @Transactional(readOnly = true)
     public ResponseListPageableCategory listCategoryPageableOut(int pageNumber, int pageSize, String orderBy, String sortDir) {
+        logger.info("Searching all categories with the following parameters: {}", Constants.parametersForLogger(pageNumber, pageSize, orderBy, sortDir));
+
         if (productCategoryRepository.findAll().isEmpty()) return null;
         Sort sort = sortDir.equalsIgnoreCase(Sort.Direction.ASC.name()) ? Sort.by(orderBy).ascending() : Sort.by(orderBy).descending();
         Pageable pageable = PageRequest.of(pageNumber, pageSize, sort);
@@ -175,7 +197,7 @@ public class CategoryAdapter implements CategoryServiceOut {
                             .build();
                 })
                 .collect(Collectors.toList());
-
+        logger.info("Categories found with the following parameters: {}", Constants.parametersForLogger(pageNumber, pageSize, orderBy, sortDir));
         // Crear y retornar el objeto paginado de respuesta
         return ResponseListPageableCategory.builder()
                 .responseCategoryList(responseCategoryList)
