@@ -7,13 +7,21 @@ import com.braidsbeautyByAngie.aggregates.request.RequestSubCategory;
 import com.braidsbeautyByAngie.aggregates.response.categories.ResponseCategory;
 import com.braidsbeautyByAngie.aggregates.response.categories.ResponseListPageableCategory;
 import com.braidsbeautyByAngie.ports.in.CategoryServiceIn;
+import io.swagger.v3.oas.annotations.OpenAPIDefinition;
+import io.swagger.v3.oas.annotations.info.Info;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Optional;
-
+@OpenAPIDefinition(
+        info = @Info(
+                title = "API-CATEGORY",
+                version = "1.0",
+                description = "Category management"
+        )
+)
 @RestController
 @RequestMapping("/v1/product-service/category")
 @RequiredArgsConstructor

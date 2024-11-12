@@ -7,13 +7,21 @@ import com.braidsbeautyByAngie.aggregates.request.RequestProduct;
 import com.braidsbeautyByAngie.aggregates.response.products.ResponseListPageableProduct;
 import com.braidsbeautyByAngie.aggregates.response.products.ResponseProduct;
 import com.braidsbeautyByAngie.ports.in.ProductServiceIn;
+import io.swagger.v3.oas.annotations.OpenAPIDefinition;
+import io.swagger.v3.oas.annotations.info.Info;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Optional;
-
+@OpenAPIDefinition(
+        info = @Info(
+                title = "API-PRODUCT",
+                version = "1.0",
+                description = "Product management"
+        )
+)
 @RestController
 @RequestMapping("/v1/product-service/product")
 @RequiredArgsConstructor
