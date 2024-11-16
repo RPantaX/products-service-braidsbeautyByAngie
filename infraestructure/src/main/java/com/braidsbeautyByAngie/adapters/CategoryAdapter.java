@@ -55,7 +55,7 @@ public class CategoryAdapter implements CategoryServiceOut {
     public ProductCategoryDTO createCategoryOut(RequestCategory requestCategory) {
 
         logger.info("Creating category with name: {}", requestCategory.getProductCategoryName());
-        if (categoryNameExistsByName(requestCategory.getProductCategoryName()) ) throw new RuntimeException("The name of the category already exists");
+            if (categoryNameExistsByName(requestCategory.getProductCategoryName()) ) throw new RuntimeException("The name of the category already exists");
 
 
         ProductCategoryEntity productCategoryEntity = ProductCategoryEntity.builder()

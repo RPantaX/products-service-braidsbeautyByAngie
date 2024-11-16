@@ -1,0 +1,29 @@
+spring:
+  application:
+    name: products-service
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+  datasource:
+    url: jdbc:postgresql://localhost:5432/db_products?useSSL=false
+    username: fazt
+    password: 123456
+
+server:
+  port: 0
+
+eureka:
+  instance:
+    instance-id: ${spring.application.name}:${random.value}
+
+swagger:
+  server:
+    url: http://localhost:${eureka.instance.instance-id}
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    csrf:
+      enabled: true
+    path: /swagger-ui.html
