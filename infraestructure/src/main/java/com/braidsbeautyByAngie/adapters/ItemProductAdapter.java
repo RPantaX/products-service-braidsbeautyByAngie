@@ -15,6 +15,9 @@ import com.braidsbeautyByAngie.mapper.*;
 import com.braidsbeautyByAngie.ports.out.ItemProductServiceOut;
 import com.braidsbeautyByAngie.repository.*;
 
+import com.braidsbeautybyangie.sagapatternspringboot.aggregates.AppExceptions.AppExceptionNotFound;
+import com.braidsbeautybyangie.sagapatternspringboot.aggregates.AppExceptions.ProductInsufficientQuantityException;
+import com.braidsbeautybyangie.sagapatternspringboot.aggregates.aggregates.dto.Product;
 import lombok.RequiredArgsConstructor;
 
 import org.slf4j.Logger;
@@ -166,6 +169,43 @@ public class ItemProductAdapter implements ItemProductServiceOut {
 
         return productItemMapper.mapProductItemEntityToDto(itemProductDeleted);
     }
+
+    @Override
+    public List<Product> reserveProductOut(Long shopOrderId, List<Product> desiredProducts) {
+
+        List<ProductItemEntity> productItemEntityList = desiredProducts.stream()
+                .map(requestProductsEvent -> {
+                    Optional<ProductItemEntity> productItemEntity = productItemRepository.findByProductItemIdAndStateTrue(requestProductsEvent.getProductId());
+                    if (productItemEntity.isEmpty()) {
+                        throw new AppExceptionNotFound("The product does not exist.");
+                    }
+                    ProductItemEntity productItemSaved = productItemEntity.get();
+                    if (productItemSaved.getProductItemQuantityInStock() < requestProductsEvent.getQuantity()) {
+                        throw new ProductInsufficientQuantityException(productItemSaved.getProductItemId(), shopOrderId);
+                    }
+                    productItemSaved.setProductItemQuantityInStock(productItemSaved.getProductItemQuantityInStock() - requestProductsEvent.getQuantity());
+                    return productItemEntity.get();
+                }).toList();
+        productItemRepository.saveAll(productItemEntityList);
+
+        return desiredProducts.stream().map(p-> Product.builder().productId(p.getProductId()).price(Double.valueOf(productItemRepository.findByProductItemIdAndStateTrue(p.getProductId()).get().getProductItemPrice())).quantity(p.getQuantity()).build()).toList();
+    }
+
+    @Override
+    public void cancelProductReservationOut(Long shopOrderId, List<Product> productsToCancel) {
+        List<ProductItemEntity> productItemEntityList = productsToCancel.stream()
+                .map(requestProductsEvent -> {
+                    Optional<ProductItemEntity> productItemEntity = productItemRepository.findByProductItemIdAndStateTrue(requestProductsEvent.getProductId());
+                    if (productItemEntity.isEmpty()) {
+                        throw new AppExceptionNotFound("The product does not exist.");
+                    }
+                    ProductItemEntity productItemSaved = productItemEntity.get();
+                    productItemSaved.setProductItemQuantityInStock(productItemSaved.getProductItemQuantityInStock() + requestProductsEvent.getQuantity());
+                    return productItemEntity.get();
+                }).toList();
+        productItemRepository.saveAll(productItemEntityList);
+    }
+
     private boolean itemProductExistsById(Long itemProductId) {
         return productItemRepository.existsById(itemProductId);
     }
@@ -209,6 +249,9 @@ public class ItemProductAdapter implements ItemProductServiceOut {
                 })
                 .collect(Collectors.toSet());
     }
+
+
+
     private Set<VariationOptionEntity> updateVariations(List<RequestVariationName> requestVariationNames) {
         logger.info("Updating variations for product.");
         return requestVariationNames.stream()

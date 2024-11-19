@@ -252,6 +252,8 @@ public class ProductAdapter implements ProductServiceOut {
                 .end(productEntityPage.isLast())
                 .build();
     }
+
+
     private boolean productNameExistsByName(String productName){ return productRepository.existsByProductName(productName); }
     private boolean productExistsById(Long productId) {
         return productRepository.existsByProductIdWithStateTrue(productId);

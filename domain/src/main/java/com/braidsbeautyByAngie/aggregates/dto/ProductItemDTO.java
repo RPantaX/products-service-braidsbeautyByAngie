@@ -15,7 +15,7 @@ public class ProductItemDTO {
 
     private String productItemSKU;
 
-    private String productItemQuantityInStock;
+    private int productItemQuantityInStock;
 
     private String productItemImage;
 

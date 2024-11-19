@@ -24,17 +24,13 @@ public class ProductItemEntity {
     private String productItemSKU;
 
     @Column(name = "Product_Item_Quantity_In_Stock", nullable = false)
-    private String productItemQuantityInStock;
+    private int productItemQuantityInStock;
 
     @Column(name = "Product_Item_Image", nullable = true)
     private String productItemImage;
 
     @Column(name = "Product_Item_Price", nullable = false)
     private String productItemPrice;
-
-    @Column(name = "Order_Line_ID", nullable = true)
-    private Long orderLineId;
-
     @Column(name = "Shoppring_Cart_Item_ID", nullable = true)
     private Long shoppingCartItemId;
 
