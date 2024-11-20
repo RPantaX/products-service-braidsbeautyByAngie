@@ -1,8 +1,8 @@
 package com.braidsbeautyByAngie.adapters.handler;
 
 import com.braidsbeautyByAngie.ports.in.ItemProductServiceIn;
-import com.braidsbeautybyangie.sagapatternspringboot.aggregates.aggregates.commands.CancelProductReservationCommand;
-import com.braidsbeautybyangie.sagapatternspringboot.aggregates.aggregates.commands.ProductReservationCancelledEvent;
+import com.braidsbeautybyangie.sagapatternspringboot.aggregates.aggregates.commands.CancelProductAndServiceReservationCommand;
+import com.braidsbeautybyangie.sagapatternspringboot.aggregates.aggregates.commands.ProductAndServiceReservationCancelledEvent;
 import com.braidsbeautybyangie.sagapatternspringboot.aggregates.aggregates.commands.ReserveProductCommand;
 import com.braidsbeautybyangie.sagapatternspringboot.aggregates.aggregates.dto.Product;
 import com.braidsbeautybyangie.sagapatternspringboot.aggregates.aggregates.events.ProductReservationFailedEvent;
@@ -33,6 +33,7 @@ public class ProductsCommandsHandler {
     @KafkaHandler
     public void handleCommand(@Payload ReserveProductCommand command) {
         try {
+            logger.info("Received ReserveProductCommand: {}", command);
             List<Product> desireProduct = command.getRequestProductsEventList().stream().map(requestProductEvent -> Product.builder()
                     .productId(requestProductEvent.getProductId())
                     .quantity(requestProductEvent.getQuantity())
@@ -43,6 +44,7 @@ public class ProductsCommandsHandler {
             ProductReservedEvent productReservedEvent = ProductReservedEvent.builder()
                     .productList(productList)
                     .shopOrderId(command.getShopOrderId())
+                    .reservationId(command.getReservationId())
                     .build();
 
             kafkaTemplate.send(productsEventsTopicName, productReservedEvent);
@@ -57,18 +59,19 @@ public class ProductsCommandsHandler {
     }
 
     @KafkaHandler
-    public void handleCommand(@Payload CancelProductReservationCommand command) {
+    public void handleCommand(@Payload CancelProductAndServiceReservationCommand command) {
         List<Product> productsToCancel = command.getProductList();
         itemProductServiceIn.cancelProductReservationIn(command.getShopOrderId(), productsToCancel);
 
-        Long[] productIds = productsToCancel.stream().map(Product::getProductId).toArray(Long[]::new);
+        Long[] productIds = productsToCancel.stream( ).map(Product::getProductId).toArray(Long[]::new);
 
-        ProductReservationCancelledEvent productReservationCancelledEvent = ProductReservationCancelledEvent.builder()
+        ProductAndServiceReservationCancelledEvent productAndServiceReservationCancelledEvent = ProductAndServiceReservationCancelledEvent.builder()
                 .productIds(productIds)
                 .shopOrderId(command.getShopOrderId())
+                .reservationId(command.getReservationId())
                 .build();
 
-        kafkaTemplate.send(productsEventsTopicName, productReservationCancelledEvent);
+        kafkaTemplate.send(productsEventsTopicName, productAndServiceReservationCancelledEvent);
 
     }
 }
