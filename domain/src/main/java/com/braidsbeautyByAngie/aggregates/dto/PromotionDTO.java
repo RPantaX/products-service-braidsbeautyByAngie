@@ -23,14 +23,4 @@ public class PromotionDTO {
     private Timestamp promotionStartDate;
 
     private Timestamp promotionEndDate;
-
-    private Boolean state;
-
-    private String modifiedByUser;
-
-    private Timestamp createdAt;
-
-    private Timestamp modifiedAt;
-
-    private Timestamp deletedAt;
 }

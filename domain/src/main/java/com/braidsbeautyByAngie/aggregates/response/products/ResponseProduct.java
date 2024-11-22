@@ -1,6 +1,7 @@
 package com.braidsbeautyByAngie.aggregates.response.products;
 
 import com.braidsbeautyByAngie.aggregates.response.categories.ResponseCategory;
+import com.braidsbeautyByAngie.aggregates.response.categories.ResponseCategoryy;
 import lombok.*;
 
 import java.util.List;
@@ -10,6 +11,9 @@ import java.util.List;
 @Getter
 @Setter
 public class ResponseProduct {
-    private List<ResponseItemProduct> responseItemProducts;
-
+    private Long productId;
+    private String productName;
+    private String productDescription;
+    private String productImage;
+    private List<ResponseProductItemDetaill> responseProductItemDetails;
 }

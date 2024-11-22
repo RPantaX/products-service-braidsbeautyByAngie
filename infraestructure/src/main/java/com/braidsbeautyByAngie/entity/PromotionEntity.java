@@ -3,6 +3,7 @@ package com.braidsbeautyByAngie.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.util.Set;
 
@@ -27,7 +28,7 @@ public class PromotionEntity {
     private String promotionDescription;
 
     @Column(name = "Promotion_Discount_Rate", nullable = true)
-    private Double promotionDiscountRate;
+    private BigDecimal promotionDiscountRate;
 
     @Column(name = "Promotion_Start_Date", nullable = true)
     private Timestamp promotionStartDate;

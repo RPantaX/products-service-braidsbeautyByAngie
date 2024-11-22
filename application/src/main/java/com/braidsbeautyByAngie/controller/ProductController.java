@@ -38,7 +38,7 @@ public class ProductController {
     }
 
     @GetMapping(value = "/{productId}")
-    public ResponseEntity<Optional<ResponseProduct>> listProductById(@PathVariable(name = "productId") Long productId){
+    public ResponseEntity<ResponseProduct> listProductById(@PathVariable(name = "productId") Long productId){
         return ResponseEntity.ok(productServiceIn.findProductByIdIn(productId));
     }
     @PostMapping()

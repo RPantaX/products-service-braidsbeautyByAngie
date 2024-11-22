@@ -3,6 +3,7 @@ package com.braidsbeautyByAngie.controller;
 import com.braidsbeautyByAngie.aggregates.dto.ProductItemDTO;
 import com.braidsbeautyByAngie.aggregates.request.RequestItemProduct;
 import com.braidsbeautyByAngie.aggregates.response.products.ResponseItemProduct;
+import com.braidsbeautyByAngie.aggregates.response.products.ResponseProductItemDetail;
 import com.braidsbeautyByAngie.ports.in.ItemProductServiceIn;
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.info.Info;
@@ -27,7 +28,7 @@ public class ItemProductController {
     private final ItemProductServiceIn productServiceIn;
 
     @GetMapping(value = "/{itemProductId}")
-    public ResponseEntity<Optional<ResponseItemProduct>> listItemProductById(@PathVariable(name = "itemProductId") Long itemProductId){
+    public ResponseEntity<ResponseProductItemDetail> listItemProductById(@PathVariable(name = "itemProductId") Long itemProductId){
         return ResponseEntity.ok(productServiceIn.findItemProductByIdIn(itemProductId));
     }
     @PostMapping()

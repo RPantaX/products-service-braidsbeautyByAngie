@@ -2,6 +2,7 @@ package com.braidsbeautyByAngie.aggregates.dto;
 
 import lombok.*;
 
+import java.math.BigDecimal;
 import java.sql.Timestamp;
 
 @AllArgsConstructor
@@ -19,7 +20,7 @@ public class ProductItemDTO {
 
     private String productItemImage;
 
-    private String productItemPrice;
+    private BigDecimal productItemPrice;
 
     private Long orderLineId;
 

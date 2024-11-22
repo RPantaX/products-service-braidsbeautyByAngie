@@ -27,7 +27,7 @@ public class ProductsServiceImpl implements ProductServiceIn {
     }
 
     @Override
-    public Optional<ResponseProduct> findProductByIdIn(Long productId) {
+    public ResponseProduct findProductByIdIn(Long productId) {
         return productServiceOut.findProductByIdOut(productId);
     }
 

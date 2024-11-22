@@ -34,10 +34,13 @@ public class ProductsCommandsHandler {
     public void handleCommand(@Payload ReserveProductCommand command) {
         try {
             logger.info("Received ReserveProductCommand: {}", command);
-            List<Product> desireProduct = command.getRequestProductsEventList().stream().map(requestProductEvent -> Product.builder()
-                    .productId(requestProductEvent.getProductId())
-                    .quantity(requestProductEvent.getQuantity())
-                    .build()).toList();
+
+            List<Product> desireProduct = command.getRequestProductsEventList().stream().map(requestProductEvent ->
+             Product.builder()
+                        .productId(requestProductEvent.getProductId())
+                        .quantity(requestProductEvent.getQuantity())
+                        .build()
+            ).toList();
 
             List<Product> productList =  itemProductServiceIn.reserveProductIn(command.getShopOrderId(), desireProduct);
 

@@ -6,10 +6,9 @@ import com.braidsbeautyByAngie.aggregates.dto.PromotionDTO;
 import com.braidsbeautyByAngie.aggregates.request.RequestItemProduct;
 import com.braidsbeautyByAngie.aggregates.request.RequestVariationName;
 import com.braidsbeautyByAngie.aggregates.response.categories.ResponseCategory;
+import com.braidsbeautyByAngie.aggregates.response.categories.ResponseCategoryy;
 import com.braidsbeautyByAngie.aggregates.response.categories.ResponseSubCategory;
-import com.braidsbeautyByAngie.aggregates.response.products.ResponseItemProduct;
-import com.braidsbeautyByAngie.aggregates.response.products.ResponseVariation;
-import com.braidsbeautyByAngie.aggregates.response.products.ResponseVariationFinal;
+import com.braidsbeautyByAngie.aggregates.response.products.*;
 import com.braidsbeautyByAngie.entity.*;
 import com.braidsbeautyByAngie.mapper.*;
 import com.braidsbeautyByAngie.ports.out.ItemProductServiceOut;
@@ -26,6 +25,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.sql.Timestamp;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -72,64 +73,29 @@ public class ItemProductAdapter implements ItemProductServiceOut {
     }
 
     @Override
-    public Optional<ResponseItemProduct> findItemProductByIdOut(Long itemProductId) {
-        logger.info("Searching for itemProduct with ID: {}", itemProductId);
-        ProductItemEntity productItemEntity = getProductItemById(itemProductId).get();
+    public ResponseProductItemDetail findItemProductByIdOut(Long itemProductId) {
+        List<Object[]> results = productItemRepository.findProductItemWithVariations(itemProductId);
 
-        // Construir subcategorías y promociones para la categoría del producto
-        List<ResponseSubCategory> subCategoryList = productItemEntity.getProductEntity().getProductCategoryEntity().getSubCategories()
-                .stream()
-                .map(subCat -> {
-                    ResponseSubCategory responseSubCategory = new ResponseSubCategory();
-                    responseSubCategory.setProductCategoryDTO(productCategoryMapper.mapCategoryEntityToDTO(subCat));
-                    return responseSubCategory;
-                }).toList();
+        if (results.isEmpty()) {
+            throw new AppExceptionNotFound("Product Item not found");
+        }
 
-        List<PromotionDTO> promotionDTOList = promotionMapper.mapPromotionListToDtoList(
-                productItemEntity.getProductEntity().getProductCategoryEntity().getPromotionEntities());
+        // Tomar los datos generales del primer resultado
+        Object[] firstResult = results.get(0);
+        ResponseProductItemDetail dto = new ResponseProductItemDetail();
+        dto.setProductItemId((Long) firstResult[0]);
+        dto.setProductItemSKU((String) firstResult[1]);
+        dto.setProductItemQuantityInStock((Integer) firstResult[2]);
+        dto.setProductItemImage((String) firstResult[3]);
+        dto.setProductItemPrice((BigDecimal) firstResult[4]);
 
-        ResponseCategory responseCategory = ResponseCategory.builder()
-                .responseSubCategoryList(subCategoryList)
-                .productCategoryDTO(productCategoryMapper.mapCategoryEntityToDTO(productItemEntity.getProductEntity().getProductCategoryEntity()))
-                .promotionDTOList(Set.copyOf(promotionDTOList))
-                .build();
-
-        // Construir opciones de variación y variaciones finales para el producto
-        Set<VariationOptionEntity> variationOptionEntitySet = productItemEntity.getVariationOptionEntitySet();
-
-        // Agrupar opciones de variación por cada variación
-        Map<VariationEntity, List<VariationOptionEntity>> groupedVariations = variationOptionEntitySet.stream()
-                .collect(Collectors.groupingBy(
-                        option -> option.getVariationEntity() != null ? option.getVariationEntity() : new VariationEntity()));  // Usar un valor predeterminado si es null
-
-        // Convertir cada grupo en una ResponseVariation con sus ResponseVariationFinals
-        List<ResponseVariation> responseVariationList = groupedVariations.entrySet().stream()
-                .map(entry -> {
-                    VariationEntity variationEntity = entry.getKey();
-                    List<VariationOptionEntity> optionEntities = entry.getValue();
-
-                    // Mapear cada VariationOptionEntity a un ResponseVariationFinal
-                    List<ResponseVariationFinal> responseVariationFinalList = optionEntities.stream()
-                            .map(optionEntity -> ResponseVariationFinal.builder()
-                                    .variationDTO(variationMapper.mapVariationEntityToDto(variationEntity))
-                                    .variationOptionDTOList(List.of(variationOptionMapper.mapVariationOptionEntityToDto(optionEntity)))
-                                    .build())
-                            .toList();
-
-                    // Crear ResponseVariation con la lista de ResponseVariationFinals
-                    return ResponseVariation.builder()
-                            .responseVariationFinals(responseVariationFinalList)
-                            .build();
-                })
+        // Construir la lista de variaciones
+        List<ResponseVariationn> variations = results.stream()
+                .map(result -> new ResponseVariationn((String) result[5], (String) result[6]))
                 .toList();
 
-        ResponseItemProduct responseItemProduct = ResponseItemProduct.builder()
-                .productDTO(productMapper.mapProductEntityToDto(productItemEntity.getProductEntity()))
-                .responseVariationList(responseVariationList)
-                .responseCategory(responseCategory)
-                .build();
-        logger.info("Product with ID {} found", itemProductId);
-        return Optional.ofNullable(responseItemProduct);
+        dto.setVariations(variations);
+        return dto;
     }
     @Transactional
     @Override
@@ -187,8 +153,23 @@ public class ItemProductAdapter implements ItemProductServiceOut {
                     return productItemEntity.get();
                 }).toList();
         productItemRepository.saveAll(productItemEntityList);
+        return desiredProducts.stream().map(p-> {
+            ProductItemEntity productItemEntity = productItemRepository.findByProductItemIdAndStateTrue(p.getProductId()).orElseThrow(()-> new AppExceptionNotFound("The product does not exist."));
+            BigDecimal productPrice = productItemEntity.getProductItemPrice();
 
-        return desiredProducts.stream().map(p-> Product.builder().productId(p.getProductId()).price(Double.valueOf(productItemRepository.findByProductItemIdAndStateTrue(p.getProductId()).get().getProductItemPrice())).quantity(p.getQuantity()).build()).toList();
+            if(!productItemEntity.getProductEntity().getProductCategoryEntity().getPromotionEntities().isEmpty()){
+                BigDecimal discountRate = productItemEntity.getProductEntity().getProductCategoryEntity().getPromotionEntities().stream()
+                        .map(PromotionEntity::getPromotionDiscountRate)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+                productPrice = productPrice.subtract(productPrice.multiply(discountRate));
+            }
+
+            return Product.builder()
+                    .productId(p.getProductId())
+                    .price(productPrice)
+                    .productName(productItemEntity.getProductEntity().getProductName())
+                    .quantity(p.getQuantity()).build();
+        }).toList();
     }
 
     @Override
@@ -205,12 +186,11 @@ public class ItemProductAdapter implements ItemProductServiceOut {
                 }).toList();
         productItemRepository.saveAll(productItemEntityList);
     }
-
     private boolean itemProductExistsById(Long itemProductId) {
         return productItemRepository.existsById(itemProductId);
     }
     private Optional<ProductItemEntity> getProductItemById(Long itemProductId) {
-        if (!itemProductExistsById(itemProductId)) throw new RuntimeException("The itemProduct does not exist.");
+        if (!itemProductExistsById(itemProductId)) throw new AppExceptionNotFound("The itemProduct does not exist.");
         return productItemRepository.findById(itemProductId);
     }
 
@@ -293,4 +273,5 @@ public class ItemProductAdapter implements ItemProductServiceOut {
                 })
                 .collect(Collectors.toSet());
     }
+
 }

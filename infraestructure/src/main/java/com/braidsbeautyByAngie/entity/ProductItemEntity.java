@@ -3,6 +3,7 @@ package com.braidsbeautyByAngie.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.util.Set;
 
@@ -30,7 +31,7 @@ public class ProductItemEntity {
     private String productItemImage;
 
     @Column(name = "Product_Item_Price", nullable = false)
-    private String productItemPrice;
+    private BigDecimal productItemPrice;
     @Column(name = "Shoppring_Cart_Item_ID", nullable = true)
     private Long shoppingCartItemId;
 

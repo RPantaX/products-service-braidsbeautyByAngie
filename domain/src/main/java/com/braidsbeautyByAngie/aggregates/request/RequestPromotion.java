@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.sql.Timestamp;
 
 
@@ -15,7 +16,7 @@ import java.sql.Timestamp;
 public class RequestPromotion {
     private String promotionName;
     private String promotionDescription;
-    private Double promotionDiscountRate;
+    private BigDecimal promotionDiscountRate;
     private Timestamp promotionStartDate;
     private Timestamp promotionEndDate;
 }

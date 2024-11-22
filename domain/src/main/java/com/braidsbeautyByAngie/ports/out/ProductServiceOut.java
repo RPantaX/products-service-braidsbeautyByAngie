@@ -14,7 +14,7 @@ public interface ProductServiceOut {
 
     ProductDTO createProductOut(RequestProduct requestProduct);
 
-    Optional<ResponseProduct> findProductByIdOut(Long productId);
+    ResponseProduct findProductByIdOut(Long productId);
 
     ProductDTO updateProductOut(Long productId, RequestProduct requestProduct);
 

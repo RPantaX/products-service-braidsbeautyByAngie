@@ -3,6 +3,7 @@ package com.braidsbeautyByAngie.impl;
 import com.braidsbeautyByAngie.aggregates.dto.ProductItemDTO;
 import com.braidsbeautyByAngie.aggregates.request.RequestItemProduct;
 import com.braidsbeautyByAngie.aggregates.response.products.ResponseItemProduct;
+import com.braidsbeautyByAngie.aggregates.response.products.ResponseProductItemDetail;
 import com.braidsbeautyByAngie.ports.in.ItemProductServiceIn;
 import com.braidsbeautyByAngie.ports.out.ItemProductServiceOut;
 import com.braidsbeautybyangie.sagapatternspringboot.aggregates.aggregates.dto.Product;
@@ -10,6 +11,7 @@ import com.braidsbeautybyangie.sagapatternspringboot.aggregates.aggregates.event
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -25,7 +27,7 @@ public class ItemProductServiceImpl implements ItemProductServiceIn {
     }
 
     @Override
-    public Optional<ResponseItemProduct> findItemProductByIdIn(Long itemProductId) {
+    public ResponseProductItemDetail findItemProductByIdIn(Long itemProductId) {
         return itemProductServiceOut.findItemProductByIdOut(itemProductId);
     }
 
@@ -48,4 +50,6 @@ public class ItemProductServiceImpl implements ItemProductServiceIn {
     public void cancelProductReservationIn(Long shopOrderId, List<Product> productsToCancel) {
         itemProductServiceOut.cancelProductReservationOut(shopOrderId, productsToCancel);
     }
+
+
 }

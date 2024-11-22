@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @AllArgsConstructor
@@ -19,7 +20,7 @@ public class RequestItemProduct {
 
     private String productItemImage;
 
-    private String productItemPrice;
+    private BigDecimal productItemPrice;
 
     private List <RequestVariationName> variationNames;
 }
