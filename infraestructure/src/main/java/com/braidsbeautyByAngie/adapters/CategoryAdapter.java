@@ -7,6 +7,7 @@ import com.braidsbeautyByAngie.aggregates.dto.PromotionDTO;
 import com.braidsbeautyByAngie.aggregates.request.RequestCategory;
 import com.braidsbeautyByAngie.aggregates.request.RequestSubCategory;
 import com.braidsbeautyByAngie.aggregates.response.categories.ResponseCategory;
+import com.braidsbeautyByAngie.aggregates.response.categories.ResponseCategoryPageable;
 import com.braidsbeautyByAngie.aggregates.response.categories.ResponseListPageableCategory;
 import com.braidsbeautyByAngie.aggregates.response.categories.ResponseSubCategory;
 import com.braidsbeautyByAngie.entity.ProductCategoryEntity;
@@ -101,20 +102,8 @@ public class CategoryAdapter implements CategoryServiceOut {
         List<ProductDTO> productDTOList = productMapper.mapProductEntityListToDtoList(productCategoryEntity.get().getProductEntities());
         Set<PromotionDTO> promotionDTOList = new HashSet<>(promotionMapper.mapPromotionListToDtoList(productCategoryEntity.get().getPromotionEntities()));
 
-        // Mapear subcategorías
-        List<ResponseSubCategory> responseSubCategoryList = productCategoryEntity.get().getSubCategories()
-                .stream()
-                .map(subCategoryEntity -> {
-                    ProductCategoryDTO subCategoryDTO = productCategoryMapper.mapCategoryEntityToDTO(subCategoryEntity);
-                    return ResponseSubCategory.builder()
-                            .productCategoryDTO(subCategoryDTO)
-                            .build();
-                })
-                .collect(Collectors.toList());
-
         ResponseCategory responseCategory = ResponseCategory.builder()
-                .productCategoryDTO(productCategoryDTO)
-                .responseSubCategoryList(responseSubCategoryList)
+                .productCategoryId(productCategoryDTO.getProductCategoryId())
                 .productDTOList(productDTOList)
                 .promotionDTOList(promotionDTOList)
                 .build();
@@ -127,24 +116,15 @@ public class CategoryAdapter implements CategoryServiceOut {
     public ProductCategoryDTO updateCategoryOut(RequestCategory requestCategory, Long categoryId) {
         logger.info("Searching for update category with ID: {}", categoryId);
         Optional<ProductCategoryEntity> productCategorySaved = getProductCategoryEntity(categoryId);
-        Set<PromotionEntity> promotionEntitySet = new HashSet<>(promotionRepository.findAllByPromotionIdAndStateTrue(requestCategory.getPromotionListId()));
+        Set<PromotionEntity> promotionEntitySet = new HashSet<>();
+        if(!requestCategory.getPromotionListId().isEmpty()){
+            promotionEntitySet = new HashSet<>(promotionRepository.findAllByPromotionIdAndStateTrue(requestCategory.getPromotionListId()));
+        }
         productCategorySaved.get().setProductCategoryName(requestCategory.getProductCategoryName());
         productCategorySaved.get().setPromotionEntities(promotionEntitySet);
 
         ProductCategoryEntity productCategoryUpdated = productCategoryRepository.save(productCategorySaved.get());
         logger.info("Category updated with ID: {}",productCategoryUpdated.getProductCategoryId());
-        return productCategoryMapper.mapCategoryEntityToDTO(productCategoryUpdated);
-    }
-
-    @Override
-    public ProductCategoryDTO updateSubCategoryOut(RequestSubCategory requestSubCategory, Long categoryId) {
-        logger.info("Searching for update subcategory with ID: {}", categoryId);
-        Optional<ProductCategoryEntity> productSubCategory = getProductCategoryEntity(categoryId);
-        productSubCategory.get().setProductCategoryName(requestSubCategory.getProductSubCategoryName());
-
-        ProductCategoryEntity productCategoryUpdated = productCategoryRepository.save(productSubCategory.get());
-        logger.info("subcategory updated with ID: {}", productCategoryUpdated.getProductCategoryId());
-
         return productCategoryMapper.mapCategoryEntityToDTO(productCategoryUpdated);
     }
 
@@ -155,7 +135,8 @@ public class CategoryAdapter implements CategoryServiceOut {
         productCategorySaved.get().setState(Constants.STATUS_INACTIVE);
         productCategorySaved.get().setModifiedByUser("PRUEBA");
         productCategorySaved.get().setDeletedAt(Constants.getTimestamp());
-
+        productCategorySaved.get().setProductEntities(null);
+        productCategorySaved.get().setParentCategory(null);
         ProductCategoryEntity productCategoryDeleted = productCategoryRepository.save(productCategorySaved.get());
         logger.info("Category deleted with ID: {}", categoryId);
         return productCategoryMapper.mapCategoryEntityToDTO(productCategoryDeleted);
@@ -172,7 +153,7 @@ public class CategoryAdapter implements CategoryServiceOut {
         Page<ProductCategoryEntity> page = productCategoryRepository.findAllCategoriesPageableAndStatusTrue(pageable);
 
         // Mapear cada ProductCategoryEntity a un ResponseCategory, incluyendo ProductDTO y PromotionDTO
-        List<ResponseCategory> responseCategoryList = page.getContent().stream()
+        List<ResponseCategoryPageable> responseCategoryList = page.getContent().stream()
                 .map(productCategoryEntity -> {
                     // Convertir la entidad de categoría en un DTO
                     ProductCategoryDTO productCategoryDTO = productCategoryMapper.mapCategoryEntityToDTO(productCategoryEntity);
@@ -183,14 +164,19 @@ public class CategoryAdapter implements CategoryServiceOut {
 
                     // Mapear subcategorías a ResponseSubCategory
                     List<ResponseSubCategory> responseSubCategoryList = productCategoryEntity.getSubCategories().stream()
-                            .map(subCategoryEntity -> ResponseSubCategory.builder()
-                                    .productCategoryDTO(productCategoryMapper.mapCategoryEntityToDTO(subCategoryEntity))
-                                    .build())
+                            .map(subCategoryEntity -> {
+                               ProductCategoryDTO subCategory  = productCategoryMapper.mapCategoryEntityToDTO(subCategoryEntity);
+                                return ResponseSubCategory.builder()
+                                        .productCategoryId(subCategory.getProductCategoryId())
+                                        .productCategoryName(subCategory.getProductCategoryName())
+                                        .build();
+                            })
                             .collect(Collectors.toList());
 
                     // Crear y retornar el ResponseCategory
-                    return ResponseCategory.builder()
-                            .productCategoryDTO(productCategoryDTO)
+                    return ResponseCategoryPageable.builder()
+                            .productCategoryId(productCategoryDTO.getProductCategoryId())
+                            .productCategoryName(productCategoryDTO.getProductCategoryName())
                             .productDTOList(productDTOList)
                             .responseSubCategoryList(responseSubCategoryList)
                             .promotionDTOList(promotionDTOList.stream().collect(Collectors.toSet()))

@@ -1,6 +1,5 @@
 package com.braidsbeautyByAngie.aggregates.response.categories;
 
-import com.braidsbeautyByAngie.aggregates.dto.ProductCategoryDTO;
 import com.braidsbeautyByAngie.aggregates.dto.ProductDTO;
 import com.braidsbeautyByAngie.aggregates.dto.PromotionDTO;
 import lombok.*;
@@ -13,9 +12,10 @@ import java.util.Set;
 @NoArgsConstructor
 @Getter
 @Setter
-public class ResponseCategory {
+public class ResponseCategoryPageable {
     private Long productCategoryId;
     private String productCategoryName;
+    private List<ResponseSubCategory> responseSubCategoryList;
     private Set<PromotionDTO> promotionDTOList;
     private List<ProductDTO> productDTOList;
 }

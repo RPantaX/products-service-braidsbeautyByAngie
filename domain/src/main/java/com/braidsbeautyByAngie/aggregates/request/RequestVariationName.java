@@ -13,5 +13,5 @@ import java.util.List;
 @Getter
 public class RequestVariationName {
     private String variationName;
-    private List<String> variationOptionValues;
+    private String variationOptionValue;
 }

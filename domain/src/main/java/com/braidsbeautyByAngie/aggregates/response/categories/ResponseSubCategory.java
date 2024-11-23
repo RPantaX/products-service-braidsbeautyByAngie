@@ -11,5 +11,6 @@ import java.util.List;
 @Getter
 @Setter
 public class ResponseSubCategory {
-    private ProductCategoryDTO productCategoryDTO;
+    private Long productCategoryId;
+    private String productCategoryName;
 }

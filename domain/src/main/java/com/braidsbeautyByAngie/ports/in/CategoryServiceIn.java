@@ -19,8 +19,6 @@ public interface CategoryServiceIn {
 
     ProductCategoryDTO updateCategoryIn(RequestCategory requestCategory, Long categoryId);
 
-    ProductCategoryDTO updateSubCategoryIn(RequestSubCategory requestSubCategory, Long categoryId);
-
     ProductCategoryDTO deleteCategoryIn(Long categoryId);
 
     ResponseListPageableCategory listCategoryPageableIn(int pageNumber, int pageSize, String orderBy, String sortDir);

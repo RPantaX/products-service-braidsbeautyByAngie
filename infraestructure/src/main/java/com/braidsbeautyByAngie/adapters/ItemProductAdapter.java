@@ -2,12 +2,8 @@ package com.braidsbeautyByAngie.adapters;
 
 import com.braidsbeautyByAngie.aggregates.constants.Constants;
 import com.braidsbeautyByAngie.aggregates.dto.ProductItemDTO;
-import com.braidsbeautyByAngie.aggregates.dto.PromotionDTO;
 import com.braidsbeautyByAngie.aggregates.request.RequestItemProduct;
 import com.braidsbeautyByAngie.aggregates.request.RequestVariationName;
-import com.braidsbeautyByAngie.aggregates.response.categories.ResponseCategory;
-import com.braidsbeautyByAngie.aggregates.response.categories.ResponseCategoryy;
-import com.braidsbeautyByAngie.aggregates.response.categories.ResponseSubCategory;
 import com.braidsbeautyByAngie.aggregates.response.products.*;
 import com.braidsbeautyByAngie.entity.*;
 import com.braidsbeautyByAngie.mapper.*;
@@ -26,7 +22,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.sql.Timestamp;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -55,9 +50,8 @@ public class ItemProductAdapter implements ItemProductServiceOut {
         if(!productRepository.existsById(requestItemProduct.getProductId())) throw new RuntimeException("The product doesn't  exists.");
         ProductEntity productEntity = productRepository.findById(requestItemProduct.getProductId()).get();
         //varation
-        Set<VariationOptionEntity> variationEntitiesSaved = saveVariations(requestItemProduct.getVariationNames());
-
-        ProductItemEntity productItemEntity1 = ProductItemEntity.builder()
+        Set<VariationOptionEntity> variationEntitiesSaved = saveVariations(requestItemProduct.getRequestVariations());
+        ProductItemEntity productItemEntity = ProductItemEntity.builder()
                 .variationOptionEntitySet(variationEntitiesSaved)
                 .productEntity(productEntity)
                 .productItemSKU(requestItemProduct.getProductItemSKU())
@@ -68,8 +62,10 @@ public class ItemProductAdapter implements ItemProductServiceOut {
                 .modifiedByUser("TEST")
                 .state(Constants.STATUS_ACTIVE)
                 .build();
-        logger.info("itemProduct '{}' created successfully with ID: {}", productItemEntity1.getProductItemId(), productItemEntity1.getProductEntity().getProductId());
-        return productItemMapper.mapProductItemEntityToDto(productItemRepository.save(productItemEntity1));
+
+        ProductItemEntity productItemEntitySaved =  productItemRepository.save(productItemEntity);
+        logger.info("itemProduct '{}' created successfully with ID: {}", productItemEntity.getProductItemId(), productItemEntity.getProductEntity().getProductId());
+        return productItemMapper.mapProductItemEntityToDto(productItemEntitySaved);
     }
 
     @Override
@@ -101,35 +97,40 @@ public class ItemProductAdapter implements ItemProductServiceOut {
     @Override
     public ProductItemDTO updateItemProductOut(Long itemProductId, RequestItemProduct requestItemProduct) {
         logger.info("Searching for update product with ID: {}", itemProductId);
-        //todo: mejorar la actualizacion.
-        if(!productRepository.existsById(itemProductId)) throw new RuntimeException("The product doesn't  exists.");
-        //varation
-        Set<VariationOptionEntity> variationEntitiesSaved = updateVariations(requestItemProduct.getVariationNames());
 
+        if(!productRepository.existsById(itemProductId)) throw new AppExceptionNotFound("The product doesn't  exists.");
+        //varation
+        Set<VariationOptionEntity> variationOptionEntities = new HashSet<>();
+        if (!requestItemProduct.getRequestVariations().isEmpty()) {
+            variationOptionEntities = saveVariations(requestItemProduct.getRequestVariations());
+        }
         ProductItemEntity productItemEntity1 = ProductItemEntity.builder()
-                .variationOptionEntitySet(variationEntitiesSaved)
+                .variationOptionEntitySet(variationOptionEntities)
                 .productItemSKU(requestItemProduct.getProductItemSKU())
                 .productItemImage(requestItemProduct.getProductItemImage())
                 .productItemPrice(requestItemProduct.getProductItemPrice())
                 .productItemQuantityInStock(requestItemProduct.getProductItemQuantityInStock())
                 .modifiedAt(Constants.getTimestamp())
-                .modifiedByUser("TEST")
+                .modifiedByUser("TEST-UPDATED")
                 .build();
         ProductItemEntity productItemSaved = productItemRepository.save(productItemEntity1);
         logger.info("itemProduct updated with ID: {}", productItemSaved.getProductItemId());
         return productItemMapper.mapProductItemEntityToDto(productItemSaved);
     }
 
+
     @Override
     public ProductItemDTO deleteItemProductOut(Long itemProductId) {
         logger.info("Searching itemProduct for delete with ID: {}", itemProductId);
 
-        Optional<ProductItemEntity> productItemEntityOptional = getProductItemById(itemProductId);
-        productItemEntityOptional.get().setDeletedAt(Constants.getTimestamp());
-        productItemEntityOptional.get().setState(Constants.STATUS_INACTIVE);
-        productItemEntityOptional.get().setModifiedByUser("TEST");
-
-        ProductItemEntity itemProductDeleted = productItemRepository.save(productItemEntityOptional.get());
+        ProductItemEntity productItemEntityOptional = getProductItemById(itemProductId).orElseThrow(
+                ()-> new AppExceptionNotFound("The itemProduct does not exist.")
+        );
+        productItemEntityOptional.setDeletedAt(Constants.getTimestamp());
+        productItemEntityOptional.setState(Constants.STATUS_INACTIVE);
+        productItemEntityOptional.setModifiedByUser("TEST");
+        productItemEntityOptional.setProductItemId(null);
+        ProductItemEntity itemProductDeleted = productItemRepository.save(productItemEntityOptional);
 
         logger.info("Product deleted with ID: {}", itemProductDeleted.getProductItemId());
 
@@ -197,81 +198,23 @@ public class ItemProductAdapter implements ItemProductServiceOut {
     private boolean productItemExistsBySKU(String sku) {
         return productItemRepository.existsByProductItemSKU(sku);
     }
-
-    private Set<VariationOptionEntity> saveVariations(List<RequestVariationName> requestVariationNames) {
-        logger.info("Creating variations for product.");
-        return requestVariationNames.stream()
-                .flatMap(variationName -> {
-                    // Crear entidad de variación
-                    VariationEntity variationEntity = VariationEntity.builder()
-                            .variationName(variationName.getVariationName())
-                            .state(Constants.STATUS_ACTIVE)
-                            .createdAt(Constants.getTimestamp())
-                            .modifiedByUser("TEST")
-                            .build();
-
-                    // Crear entidades de opción de variación y asociarlas a la variación
-                    List<VariationOptionEntity> variationOptionEntities = variationName.getVariationOptionValues().stream()
-                            .map(optionValue -> VariationOptionEntity.builder()
-                                    .variationOptionValue(optionValue)
-                                    .state(Constants.STATUS_ACTIVE)
-                                    .createdAt(Constants.getTimestamp())
-                                    .modifiedByUser("TEST")
-                                    .build())
-                            .collect(Collectors.toList());
-
-                    // Guardar las opciones de variación y la variación
-                    variationEntity.setVariationOptionEntities(variationOptionRepository.saveAll(variationOptionEntities));
-                    variationRepository.save(variationEntity);
-
-                    // Retornar el stream de entidades de opción de variación
-                    return variationOptionEntities.stream();
-                })
-                .collect(Collectors.toSet());
-    }
-
-
-
-    private Set<VariationOptionEntity> updateVariations(List<RequestVariationName> requestVariationNames) {
-        logger.info("Updating variations for product.");
-        return requestVariationNames.stream()
-                .flatMap(variationName -> {
-                    // Crear entidad de variación
-                    VariationEntity variationEntity = VariationEntity.builder()
-                            .variationName(variationName.getVariationName())
+    private Set<VariationOptionEntity> saveVariations(List<RequestVariationName> requestVariationNameList) {
+        return requestVariationNameList.stream().map(
+                requestVariationName -> {
+                    VariationEntity variationEntity = variationRepository.findByVariationName(requestVariationName.getVariationName()).orElseThrow(
+                            ()-> new AppExceptionNotFound("The variation does not exist.")
+                    );
+                    if (variationOptionRepository.existsByVariationOptionValue(requestVariationName.getVariationOptionValue())) {
+                        return variationOptionRepository.findByVariationOptionValue(requestVariationName.getVariationOptionValue()).get();
+                    }
+                    VariationOptionEntity variationOptionEntity = VariationOptionEntity.builder()
+                            .variationEntity(variationEntity)
+                            .variationOptionValue(requestVariationName.getVariationOptionValue())
                             .state(Constants.STATUS_ACTIVE)
                             .modifiedAt(Constants.getTimestamp())
                             .modifiedByUser("TEST")
                             .build();
-
-                    // Crear entidades de opción de variación y asociarlas a la variación
-                    List<VariationOptionEntity> variationOptionEntities = variationName.getVariationOptionValues().stream()
-                            .map(optionValue -> {
-                                if(variationOptionRepository.existsByVariationOptionValue(optionValue)){
-                                    return VariationOptionEntity.builder()
-                                            .variationOptionValue(optionValue)
-                                            .state(Constants.STATUS_ACTIVE)
-                                            .modifiedAt(Constants.getTimestamp())
-                                            .modifiedByUser("TEST")
-                                            .build();
-                                }
-                                return  VariationOptionEntity.builder()
-                                        .variationOptionValue(optionValue)
-                                        .state(Constants.STATUS_ACTIVE)
-                                        .createdAt(Constants.getTimestamp())
-                                        .modifiedByUser("TEST")
-                                        .build();
-                            })
-                            .collect(Collectors.toList());
-
-                    // Guardar las opciones de variación y la variación
-                    variationEntity.setVariationOptionEntities(variationOptionRepository.saveAll(variationOptionEntities));
-                    variationRepository.save(variationEntity);
-
-                    // Retornar el stream de entidades de opción de variación
-                    return variationOptionEntities.stream();
-                })
-                .collect(Collectors.toSet());
+                    return variationOptionRepository.save(variationOptionEntity);
+                }).collect(Collectors.toSet());
     }
-
 }

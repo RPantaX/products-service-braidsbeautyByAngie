@@ -19,13 +19,4 @@ public class ProductDTO {
 
     private String productImage;
 
-    private Boolean state;
-
-    private String modifiedByUser;
-
-    private Timestamp createdAt;
-
-    private Timestamp modifiedAt;
-
-    private Timestamp deletedAt;
 }

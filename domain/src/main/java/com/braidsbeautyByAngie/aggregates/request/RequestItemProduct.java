@@ -15,12 +15,8 @@ import java.util.List;
 public class RequestItemProduct {
     private Long productId;
     private String productItemSKU;
-
     private int productItemQuantityInStock;
-
     private String productItemImage;
-
     private BigDecimal productItemPrice;
-
-    private List <RequestVariationName> variationNames;
+    private List<RequestVariationName> requestVariations;
 }

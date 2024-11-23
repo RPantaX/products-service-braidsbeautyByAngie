@@ -40,11 +40,6 @@ public class CategoryServiceImpl implements CategoryServiceIn {
     }
 
     @Override
-    public ProductCategoryDTO updateSubCategoryIn(RequestSubCategory requestSubCategory, Long categoryId) {
-        return categoryServiceOut.updateSubCategoryOut(requestSubCategory, categoryId);
-    }
-
-    @Override
     public ProductCategoryDTO deleteCategoryIn(Long categoryId) {
         return categoryServiceOut.deleteCategoryOut(categoryId);
     }

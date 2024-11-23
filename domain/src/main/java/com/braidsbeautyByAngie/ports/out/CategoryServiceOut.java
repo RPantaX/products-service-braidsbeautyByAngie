@@ -18,8 +18,6 @@ public interface CategoryServiceOut {
 
     ProductCategoryDTO updateCategoryOut(RequestCategory requestCategory, Long categoryId);
 
-    ProductCategoryDTO updateSubCategoryOut(RequestSubCategory requestSubCategory, Long categoryId);
-
     ProductCategoryDTO deleteCategoryOut(Long categoryId);
 
     ResponseListPageableCategory listCategoryPageableOut(int pageNumber, int pageSize, String orderBy, String sortDir);

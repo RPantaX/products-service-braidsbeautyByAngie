@@ -178,9 +178,14 @@ public class ProductAdapter implements ProductServiceOut {
         List<ResponseProduct> responseProductList = productPage.getContent().stream().map(product -> {
             List<ResponseProductItemDetaill> productItemDetails = product.getProductItemEntities().stream().map(item -> {
                 List<ResponseVariationn> variations = item.getVariationOptionEntitySet().stream()
-                        .map(variationOption -> new ResponseVariationn(
-                                variationOption.getVariationEntity().getVariationName(),
-                                variationOption.getVariationOptionValue()))
+                        .map(variationOption -> {
+                            VariationEntity variationEntity = variationOption.getVariationEntity();
+                            // Manejar casos nulos
+                            String variationName = variationEntity != null ? variationEntity.getVariationName() : "Unknown Variation";
+                            String variationValue = variationOption.getVariationOptionValue();
+
+                            return new ResponseVariationn(variationName, variationValue);
+                        })
                         .collect(Collectors.toList());
 
                 return new ResponseProductItemDetaill(
@@ -222,51 +227,5 @@ public class ProductAdapter implements ProductServiceOut {
         if(!productExistsById(productId)) throw new AppExceptionNotFound("The product does not exist.");
         return productRepository.findProductByProductIdWithStateTrue(productId);
     }
-    private ResponseCategoryy buildCategory(Object[] firstResult, List<Object[]> results) {
-        // Construir la categoría
-        ResponseCategoryy category = new ResponseCategoryy();
-        category.setProductCategoryId((Long) firstResult[4]);
-        category.setProductCategoryName((String) firstResult[5]);
 
-        // Agregar las promociones
-        List<PromotionDTO> promotions = results.stream()
-                .filter(result -> result[12] != null) // Filtra las filas que contienen promociones
-                .map(result -> new PromotionDTO(
-                        (Long) result[12],
-                        (String) result[13],
-                        (String) result[14],
-                        (Double) result[15],
-                        (Timestamp) result[16],
-                        (Timestamp) result[17]
-                ))
-                .collect(Collectors.toList());
-
-        category.setPromotionDTOList(promotions);
-        return category;
-    }
-
-    private List<ResponseProductItemDetaill> buildProductItems(List<Object[]> results) {
-        // Construir la lista de elementos de productos
-        return results.stream()
-                .map(result -> {
-                    ResponseProductItemDetaill item = new ResponseProductItemDetaill();
-                    item.setProductItemId((Long) result[6]);
-                    item.setProductItemSKU((String) result[7]);
-                    item.setProductItemQuantityInStock((Integer) result[8]);
-                    item.setProductItemImage((String) result[9]);
-                    item.setProductItemPrice((BigDecimal) result[10]);
-                    item.setVariations(buildVariations(result));
-                    return item;
-                })
-                .collect(Collectors.toList());
-    }
-
-    private List<ResponseVariationn> buildVariations(Object[] result) {
-        // Construir la lista de variaciones para cada producto item
-        ResponseVariationn variation = new ResponseVariationn(
-                (String) result[11],  // variationName
-                (String) result[12]   // variationOptionValue
-        );
-        return List.of(variation);
-    }
 }
