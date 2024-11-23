@@ -129,7 +129,7 @@ public class ItemProductAdapter implements ItemProductServiceOut {
         productItemEntityOptional.setDeletedAt(Constants.getTimestamp());
         productItemEntityOptional.setState(Constants.STATUS_INACTIVE);
         productItemEntityOptional.setModifiedByUser("TEST");
-        productItemEntityOptional.setProductItemId(null);
+        productItemEntityOptional.setProductEntity(null);
         ProductItemEntity itemProductDeleted = productItemRepository.save(productItemEntityOptional);
 
         logger.info("Product deleted with ID: {}", itemProductDeleted.getProductItemId());
@@ -211,7 +211,7 @@ public class ItemProductAdapter implements ItemProductServiceOut {
                             .variationEntity(variationEntity)
                             .variationOptionValue(requestVariationName.getVariationOptionValue())
                             .state(Constants.STATUS_ACTIVE)
-                            .modifiedAt(Constants.getTimestamp())
+                            .createdAt(Constants.getTimestamp())
                             .modifiedByUser("TEST")
                             .build();
                     return variationOptionRepository.save(variationOptionEntity);

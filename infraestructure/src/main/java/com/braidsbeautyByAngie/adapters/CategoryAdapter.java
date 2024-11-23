@@ -104,6 +104,7 @@ public class CategoryAdapter implements CategoryServiceOut {
 
         ResponseCategory responseCategory = ResponseCategory.builder()
                 .productCategoryId(productCategoryDTO.getProductCategoryId())
+                .productCategoryName(productCategoryDTO.getProductCategoryName())
                 .productDTOList(productDTOList)
                 .promotionDTOList(promotionDTOList)
                 .build();
@@ -146,7 +147,7 @@ public class CategoryAdapter implements CategoryServiceOut {
     @Transactional(readOnly = true)
     public ResponseListPageableCategory listCategoryPageableOut(int pageNumber, int pageSize, String orderBy, String sortDir) {
         logger.info("Searching all categories with the following parameters: {}", Constants.parametersForLogger(pageNumber, pageSize, orderBy, sortDir));
-
+        //TODO: VERIFICAR SALIDA O NO DE SUBCATEGORIAS
         if (productCategoryRepository.findAll().isEmpty()) return null;
         Sort sort = sortDir.equalsIgnoreCase(Sort.Direction.ASC.name()) ? Sort.by(orderBy).ascending() : Sort.by(orderBy).descending();
         Pageable pageable = PageRequest.of(pageNumber, pageSize, sort);
@@ -194,6 +195,16 @@ public class CategoryAdapter implements CategoryServiceOut {
                 .end(page.isLast())
                 .build();
     }
+
+    @Override
+    public List<ProductCategoryDTO> listCategoryOut() {
+        logger.info("Searching all categories");
+        List<ProductCategoryEntity> productCategoryEntityList = productCategoryRepository.findAll();
+        return productCategoryEntityList.stream()
+                .map(productCategoryMapper::mapCategoryEntityToDTO)
+                .collect(Collectors.toList());
+    }
+
 
     private boolean categoryNameExistsByName(String categoryName){
         return productCategoryRepository.existsByProductCategoryName(categoryName);

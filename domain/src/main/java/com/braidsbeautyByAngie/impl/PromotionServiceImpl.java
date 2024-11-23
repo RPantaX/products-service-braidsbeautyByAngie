@@ -10,6 +10,7 @@ import com.braidsbeautyByAngie.ports.out.PromotionServiceOut;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 @Service
 @RequiredArgsConstructor
@@ -40,5 +41,10 @@ public class PromotionServiceImpl implements PromotionServiceIn {
     @Override
     public ResponseListPageablePromotion listPromotionByPageIn(int pageNumber, int pageSize, String orderBy, String sortDir) {
         return promotionServiceOut.listPromotionByPageOut(pageNumber, pageSize, orderBy, sortDir);
+    }
+
+    @Override
+    public List<PromotionDTO> listPromotionIn() {
+        return promotionServiceOut.listPromotionOut();
     }
 }

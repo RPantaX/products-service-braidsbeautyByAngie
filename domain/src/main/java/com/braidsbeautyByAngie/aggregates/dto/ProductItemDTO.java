@@ -25,14 +25,4 @@ public class ProductItemDTO {
     private Long orderLineId;
 
     private Long shoppingCartItemId;
-
-    private Boolean state;
-
-    private String modifiedByUser;
-
-    private Timestamp createdAt;
-
-    private Timestamp modifiedAt;
-
-    private Timestamp deletedAt;
 }

@@ -14,6 +14,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Optional;
 @OpenAPIDefinition(
         info = @Info(
@@ -29,14 +30,17 @@ public class CategoryController {
 
     private final CategoryServiceIn categoryService;
 
-    @GetMapping("/list")
+    @GetMapping("/list/pageable")
     public ResponseEntity<ResponseListPageableCategory> listCategoryPageableList(@RequestParam(value = "pageNo", defaultValue = Constants.NUM_PAG_BY_DEFECT, required = false) int pageNo,
                                                                                  @RequestParam(value = "pageSize", defaultValue = Constants.SIZE_PAG_BY_DEFECT, required = false) int pageSize,
                                                                                  @RequestParam(value = "sortBy", defaultValue = Constants.ORDER_BY_DEFECT_ALL, required = false) String sortBy,
                                                                                  @RequestParam(value = "sortDir", defaultValue = Constants.ORDER_DIRECT_BY_DEFECT, required = false) String sortDir){
         return ResponseEntity.ok(categoryService.listCategoryPageableIn(pageNo, pageSize, sortBy, sortDir));
     }
-
+    @GetMapping("/list")
+    public ResponseEntity<List<ProductCategoryDTO>> listCategory(){
+        return ResponseEntity.ok(categoryService.listCategoryIn());
+    }
     @GetMapping(value = "/{categoryId}")
     public ResponseEntity<Optional<ResponseCategory>> listCategoryById(@PathVariable(name = "categoryId") Long categoryId){
         return ResponseEntity.ok(categoryService.findCategoryByIdIn(categoryId));
@@ -58,11 +62,6 @@ public class CategoryController {
     @PostMapping("/subcategory")
     public ResponseEntity<ProductCategoryDTO> saveSubCategory(@RequestBody RequestSubCategory requestSubCategory){
         return new ResponseEntity<>(categoryService.createSubCategoryIn(requestSubCategory), HttpStatus.CREATED);
-    }
-
-    @PutMapping("/subcategory/{categoryId}")
-    public ResponseEntity<ProductCategoryDTO> updateSubCategory(@PathVariable(name = "categoryId") Long categoryId,@RequestBody RequestSubCategory requestSubCategory){
-        return ResponseEntity.ok(categoryService.updateSubCategoryIn(requestSubCategory,categoryId));
     }
 
 }

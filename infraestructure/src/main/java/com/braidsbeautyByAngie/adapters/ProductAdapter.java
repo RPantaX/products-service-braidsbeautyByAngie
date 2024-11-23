@@ -3,9 +3,7 @@ package com.braidsbeautyByAngie.adapters;
 import com.braidsbeautyByAngie.aggregates.constants.Constants;
 import com.braidsbeautyByAngie.aggregates.dto.*;
 import com.braidsbeautyByAngie.aggregates.request.RequestProduct;
-import com.braidsbeautyByAngie.aggregates.response.categories.ResponseCategory;
 import com.braidsbeautyByAngie.aggregates.response.categories.ResponseCategoryy;
-import com.braidsbeautyByAngie.aggregates.response.categories.ResponseSubCategory;
 import com.braidsbeautyByAngie.aggregates.response.products.*;
 import com.braidsbeautyByAngie.entity.*;
 import com.braidsbeautyByAngie.mapper.*;
@@ -27,7 +25,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.sql.Timestamp;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -77,44 +74,64 @@ public class ProductAdapter implements ProductServiceOut {
     @Transactional(readOnly = true)
     public ResponseProduct findProductByIdOut(Long productId) {
         List<Object[]> results = productRepository.findProductDetailsById(productId);
-
         if (results.isEmpty()) {
             throw new AppExceptionNotFound("Product not found with ID: " + productId);
         }
 
+        ProductEntity productEntity = productRepository.findProductByProductIdWithStateTrue(productId).orElseThrow(() ->
+                new AppExceptionNotFound("Product not found with ID: " + productId));
+
+        ProductCategoryEntity productCategory = productCategoryRepository.findProductCategoryIdAndStateTrue(
+                Optional.ofNullable(productEntity.getProductCategoryEntity())
+                        .map(ProductCategoryEntity::getProductCategoryId)
+                        .orElseThrow(() -> new AppExceptionNotFound("Category not found"))
+        ).orElseThrow(() -> new AppExceptionNotFound("Category not found"));
+
+        List<PromotionDTO> promotionDTOList = productCategory.getPromotionEntities().stream()
+                .map(promotionMapper::mapPromotionEntityToDto)
+                .collect(Collectors.toList());
+
+        ResponseCategoryy responseCategoryy = ResponseCategoryy.builder()
+                .productCategoryId(productCategory.getProductCategoryId())
+                .productCategoryName(productCategory.getProductCategoryName())
+                .promotionDTOList(promotionDTOList)
+                .build();
+
         // Mapear datos del producto
         ResponseProduct productDetail = ResponseProduct.builder()
-                .productId((Long) results.get(0)[0])
-                .productName((String) results.get(0)[1])
-                .productDescription((String) results.get(0)[2])
-                .productImage((String) results.get(0)[3])
+                .productId(Optional.ofNullable((Long) results.get(0)[0]).orElse(null))
+                .productName(Optional.ofNullable((String) results.get(0)[1]).orElse(""))
+                .productDescription(Optional.ofNullable((String) results.get(0)[2]).orElse(""))
+                .productImage(Optional.ofNullable((String) results.get(0)[3]).orElse(""))
                 .responseProductItemDetails(new ArrayList<>())
+                .responseCategory(responseCategoryy)
                 .build();
 
         // Mapear ítems y variaciones
         Map<Long, ResponseProductItemDetaill> itemMap = new HashMap<>();
 
         for (Object[] row : results) {
-            Long itemId = (Long) row[4];
-            if (!itemMap.containsKey(itemId)) {
+            Long itemId = Optional.ofNullable((Long) row[4]).orElse(null);
+            if (itemId != null && !itemMap.containsKey(itemId)) {
                 ResponseProductItemDetaill itemDetail = ResponseProductItemDetaill.builder()
                         .productItemId(itemId)
-                        .productItemSKU((String) row[5])
-                        .productItemQuantityInStock((Integer) row[6])
-                        .productItemImage((String) row[7])
-                        .productItemPrice((BigDecimal) row[8])
+                        .productItemSKU(Optional.ofNullable((String) row[5]).orElse(""))
+                        .productItemQuantityInStock(Optional.ofNullable((Integer) row[6]).orElse(0))
+                        .productItemImage(Optional.ofNullable((String) row[7]).orElse(""))
+                        .productItemPrice(Optional.ofNullable((BigDecimal) row[8]).orElse(BigDecimal.ZERO))
                         .variations(new ArrayList<>())
                         .build();
                 itemMap.put(itemId, itemDetail);
                 productDetail.getResponseProductItemDetails().add(itemDetail);
             }
 
-            ResponseVariationn variationDetail = ResponseVariationn.builder()
-                    .variationName((String) row[9])
-                    .options((String) row[10])
-                    .build();
-
-            itemMap.get(itemId).getVariations().add(variationDetail);
+            if (itemId != null) {
+                ResponseVariationn variationDetail = ResponseVariationn.builder()
+                        .variationName(Optional.ofNullable((String) row[9]).orElse(""))
+                        .options(Optional.ofNullable((String) row[10]).orElse(""))
+                        .build();
+                itemMap.get(itemId).getVariations().add(variationDetail);
+            }
         }
 
         return productDetail;
@@ -127,7 +144,7 @@ public class ProductAdapter implements ProductServiceOut {
 
         if(!productEntitySaved.get().getProductName().equalsIgnoreCase(requestProduct.getProductName()) && productNameExistsByName(requestProduct.getProductName())) {throw new RuntimeException("The product name already exists");}
 
-        if(requestProduct.getProductCategoryId() !=null && !productCategoryRepository.existByProductCategoryIdAndStateTrue(requestProduct.getProductCategoryId())) {
+        if(requestProduct.getProductCategoryId() !=null && productCategoryRepository.existByProductCategoryIdAndStateTrue(requestProduct.getProductCategoryId())) {
             ProductCategoryEntity productCategorySaved = productCategoryRepository.findProductCategoryIdAndStateTrue(requestProduct.getProductCategoryId()).orElseThrow(()->
                     new AppExceptionNotFound("Category not found"));
             productEntitySaved.get().setProductCategoryEntity(productCategorySaved);
@@ -150,9 +167,9 @@ public class ProductAdapter implements ProductServiceOut {
         productItemEntities.forEach(productItemEntity -> {
             productItemEntity.setState(Constants.STATUS_INACTIVE);
             productItemEntity.setDeletedAt(Constants.getTimestamp());
-            productItemEntity.setModifiedByUser("TEST-FROM-PRODUCT");
+            productItemEntity.setModifiedByUser("TEST-PRODUCT");
         });
-        productItemRepository.deleteAll(productItemEntities);
+        productItemRepository.saveAll(productItemEntities);
         productEntitySaved.get().setModifiedByUser("TEST");
         productEntitySaved.get().setProductCategoryEntity(null);
         productEntitySaved.get().setDeletedAt(Constants.getTimestamp());
@@ -172,11 +189,27 @@ public class ProductAdapter implements ProductServiceOut {
                 Sort.by(orderBy).descending();
         Pageable pageable = PageRequest.of(pageNumber, pageSize, sort);
 
-        Page<ProductEntity> productPage = productRepository.findAll(pageable);
+        Page<ProductEntity> productPage = productRepository.findAllByStateTrueAndPageable(pageable);
 
         // Convertir entidades a DTOs
         List<ResponseProduct> responseProductList = productPage.getContent().stream().map(product -> {
+
+            ProductEntity productEntity = productRepository.findProductByProductIdWithStateTrue(product.getProductId()).orElseThrow(()->
+                    new AppExceptionNotFound("Product not found with ID: "+product.getProductId()));
+
+            ProductCategoryEntity productCategory = productCategoryRepository.findProductCategoryIdAndStateTrue(productEntity.getProductCategoryEntity().getProductCategoryId()).orElseThrow(()->
+                    new AppExceptionNotFound("Category not found"));
+            List<PromotionDTO> promotionDTOList = productCategory.getPromotionEntities().stream()
+                    .map(promotionMapper::mapPromotionEntityToDto)
+                    .collect(Collectors.toList());
+            ResponseCategoryy responseCategoryy = ResponseCategoryy.builder()
+                    .productCategoryId(productCategory.getProductCategoryId())
+                    .productCategoryName(productCategory.getProductCategoryName())
+                    .promotionDTOList(promotionDTOList)
+                    .build();
+
             List<ResponseProductItemDetaill> productItemDetails = product.getProductItemEntities().stream().map(item -> {
+
                 List<ResponseVariationn> variations = item.getVariationOptionEntitySet().stream()
                         .map(variationOption -> {
                             VariationEntity variationEntity = variationOption.getVariationEntity();
@@ -203,7 +236,9 @@ public class ProductAdapter implements ProductServiceOut {
                     product.getProductName(),
                     product.getProductDescription(),
                     product.getProductImage(),
+                    responseCategoryy,
                     productItemDetails
+
             );
         }).collect(Collectors.toList());
 

@@ -1,6 +1,7 @@
 package com.braidsbeautyByAngie.impl;
 
 import com.braidsbeautyByAngie.aggregates.dto.ProductCategoryDTO;
+import com.braidsbeautyByAngie.aggregates.dto.ProductDTO;
 import com.braidsbeautyByAngie.aggregates.request.RequestCategory;
 import com.braidsbeautyByAngie.aggregates.request.RequestSubCategory;
 import com.braidsbeautyByAngie.aggregates.response.categories.ResponseCategory;
@@ -11,6 +12,7 @@ import com.braidsbeautyByAngie.ports.out.CategoryServiceOut;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -47,5 +49,10 @@ public class CategoryServiceImpl implements CategoryServiceIn {
     @Override
     public ResponseListPageableCategory listCategoryPageableIn(int pageNumber, int pageSize, String orderBy, String sortDir) {
         return categoryServiceOut.listCategoryPageableOut(pageNumber,pageSize,orderBy ,sortDir);
+    }
+
+    @Override
+    public List<ProductCategoryDTO> listCategoryIn() {
+        return categoryServiceOut.listCategoryOut();
     }
 }

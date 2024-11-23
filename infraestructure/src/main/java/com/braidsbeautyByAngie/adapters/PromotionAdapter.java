@@ -13,6 +13,8 @@ import com.braidsbeautyByAngie.mapper.PromotionMapper;
 import com.braidsbeautyByAngie.ports.out.PromotionServiceOut;
 import com.braidsbeautyByAngie.repository.PromotionRepository;
 
+import com.braidsbeautybyangie.sagapatternspringboot.aggregates.AppExceptions.AppException;
+import com.braidsbeautybyangie.sagapatternspringboot.aggregates.AppExceptions.AppExceptionNotFound;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,7 +47,7 @@ public class PromotionAdapter implements PromotionServiceOut {
     public PromotionDTO createPromotionOut(RequestPromotion requestPromotion) {
 
         logger.info("Creating promotion with name: {}", requestPromotion.getPromotionName());
-        if(promotionExistByName(requestPromotion.getPromotionName()))  throw new RuntimeException("The name of the promotion already exists");
+        if(promotionExistByName(requestPromotion.getPromotionName()))  throw new AppException("The name of the promotion already exists");
         PromotionEntity promotionEntity = PromotionEntity.builder()
                 .promotionName(requestPromotion.getPromotionName())
                 .promotionDescription(requestPromotion.getPromotionDescription())
@@ -88,6 +90,7 @@ public class PromotionAdapter implements PromotionServiceOut {
         promotionEntity.setPromotionEndDate(requestPromotion.getPromotionEndDate());
         promotionEntity.setModifiedByUser("TEST");
         promotionEntity.setModifiedAt(Constants.getTimestamp());
+        promotionEntity.setProductCategoryEntities(new HashSet<>());
 
         PromotionEntity promotionEntityUpdated = promotionRepository.save(promotionEntity);
         logger.info("promotion updated with ID: {}", promotionEntityUpdated.getPromotionId());
@@ -142,6 +145,14 @@ public class PromotionAdapter implements PromotionServiceOut {
                 .build();
     }
 
+    @Override
+    public List<PromotionDTO> listPromotionOut() {
+        logger.info("Searching all promotions");
+        List<PromotionEntity> promotionEntityList = promotionRepository.findAllByStateTrue();
+
+        return promotionEntityList.stream().map(promotionMapper::mapPromotionEntityToDto).toList();
+    }
+
     private boolean promotionExistByName(String promotionName) {
         return promotionRepository.existsByPromotionName(promotionName);
     }
@@ -149,7 +160,7 @@ public class PromotionAdapter implements PromotionServiceOut {
         return promotionRepository.existsByPromotionIdAndStateTrue(promotionId);
     }
     private Optional<PromotionEntity> getPromotionEntity(Long promotionId) {
-        if (!promotionExistById(promotionId)) throw new RuntimeException("The promotion does not exist.");
+        if (!promotionExistById(promotionId)) throw new AppExceptionNotFound("The promotion does not exist.");
         return promotionRepository.findPromotionByIdWithStateTrue(promotionId);
     }
 }

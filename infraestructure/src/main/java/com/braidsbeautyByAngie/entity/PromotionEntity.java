@@ -21,7 +21,7 @@ public class PromotionEntity {
     @Column(name = "Promotion_ID", nullable = false)
     private Long promotionId;
 
-    @Column(name = "Promotion_Name", nullable = true)
+    @Column(name = "Promotion_Name", nullable = true, unique = true)
     private String promotionName;
 
     @Column(name = "Promotion_Description", nullable = true)

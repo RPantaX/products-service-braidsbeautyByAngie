@@ -35,7 +35,7 @@ public class ProductItemEntity {
     @Column(name = "Shoppring_Cart_Item_ID", nullable = true)
     private Long shoppingCartItemId;
 
-    @ManyToOne(optional = false)
+    @ManyToOne(optional = true)
     @JoinColumn(name = "Product_ID")
     private ProductEntity productEntity;
 

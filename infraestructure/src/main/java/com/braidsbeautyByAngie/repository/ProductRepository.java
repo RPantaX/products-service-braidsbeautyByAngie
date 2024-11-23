@@ -39,9 +39,9 @@ public interface ProductRepository extends JpaRepository<ProductEntity,Long> {
            v.variationName AS variationName,
            vo.variationOptionValue AS variationOptionValue
     FROM ProductEntity p
-    JOIN p.productItemEntities pi
-    JOIN pi.variationOptionEntitySet vo
-    JOIN vo.variationEntity v
+    FULL JOIN p.productItemEntities pi
+    FULL JOIN pi.variationOptionEntitySet vo
+    FULL JOIN vo.variationEntity v
     WHERE p.productId = :productId
       AND p.state = true
 """)

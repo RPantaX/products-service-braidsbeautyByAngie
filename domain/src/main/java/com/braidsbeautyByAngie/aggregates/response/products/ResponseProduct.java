@@ -15,5 +15,6 @@ public class ResponseProduct {
     private String productName;
     private String productDescription;
     private String productImage;
+    private ResponseCategoryy responseCategory;
     private List<ResponseProductItemDetaill> responseProductItemDetails;
 }
