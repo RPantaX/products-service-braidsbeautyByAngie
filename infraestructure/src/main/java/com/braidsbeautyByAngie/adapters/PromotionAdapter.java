@@ -6,7 +6,6 @@ import com.braidsbeautyByAngie.aggregates.dto.PromotionDTO;
 import com.braidsbeautyByAngie.aggregates.request.RequestPromotion;
 import com.braidsbeautyByAngie.aggregates.response.promotions.ResponseListPageablePromotion;
 import com.braidsbeautyByAngie.aggregates.response.promotions.ResponsePromotion;
-import com.braidsbeautyByAngie.entity.ProductCategoryEntity;
 import com.braidsbeautyByAngie.entity.PromotionEntity;
 import com.braidsbeautyByAngie.mapper.ProductCategoryMapper;
 import com.braidsbeautyByAngie.mapper.PromotionMapper;
@@ -15,9 +14,7 @@ import com.braidsbeautyByAngie.repository.PromotionRepository;
 
 import com.braidsbeautybyangie.sagapatternspringboot.aggregates.AppExceptions.AppException;
 import com.braidsbeautybyangie.sagapatternspringboot.aggregates.AppExceptions.AppExceptionNotFound;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -30,25 +27,111 @@ import lombok.RequiredArgsConstructor;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
-
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class PromotionAdapter implements PromotionServiceOut {
 
     private final PromotionRepository promotionRepository;
-
     private final PromotionMapper promotionMapper;
     private final ProductCategoryMapper productCategoryMapper;
 
-    private static final Logger logger = LoggerFactory.getLogger(PromotionAdapter.class);
-
     @Override
     public PromotionDTO createPromotionOut(RequestPromotion requestPromotion) {
+        log.info("Attempting to create promotion with name: {}", requestPromotion.getPromotionName());
 
-        logger.info("Creating promotion with name: {}", requestPromotion.getPromotionName());
-        if(promotionExistByName(requestPromotion.getPromotionName()))  throw new AppException("The name of the promotion already exists");
-        PromotionEntity promotionEntity = PromotionEntity.builder()
+        if (promotionExistByName(requestPromotion.getPromotionName())) {
+            throw new AppException("The promotion name already exists");
+        }
+
+        PromotionEntity promotionEntity = buildPromotionEntity(requestPromotion);
+        PromotionEntity savedPromotion = promotionRepository.save(promotionEntity);
+
+        log.info("Promotion '{}' created successfully with ID: {}", savedPromotion.getPromotionName(), savedPromotion.getPromotionId());
+        return promotionMapper.mapPromotionEntityToDto(savedPromotion);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<ResponsePromotion> findPromotionByIdOut(Long promotionId) {
+        log.info("Searching for promotion with ID: {}", promotionId);
+
+        PromotionEntity promotionEntity = getPromotionEntity(promotionId).orElseThrow(() -> {
+            log.error("Promotion with ID {} not found", promotionId);
+            return new AppExceptionNotFound("Promotion not found");
+        });
+
+        ResponsePromotion responsePromotion = buildResponsePromotion(promotionEntity);
+        log.info("Promotion with ID {} found", promotionId);
+
+        return Optional.of(responsePromotion);
+    }
+
+    @Override
+    public PromotionDTO updatePromotionOut(Long promotionId, RequestPromotion requestPromotion) {
+        log.info("Updating promotion with ID: {}", promotionId);
+
+        PromotionEntity promotionEntity = getPromotionEntity(promotionId).orElseThrow(() -> {
+            log.error("Promotion with ID {} not found for update", promotionId);
+            return new AppExceptionNotFound("Promotion not found");
+        });
+
+        updatePromotionEntity(promotionEntity, requestPromotion);
+        PromotionEntity updatedPromotion = promotionRepository.save(promotionEntity);
+
+        log.info("Promotion with ID {} updated successfully", updatedPromotion.getPromotionId());
+        return promotionMapper.mapPromotionEntityToDto(updatedPromotion);
+    }
+
+    @Override
+    public PromotionDTO deletePromotionOut(Long promotionId) {
+        log.info("Deleting promotion with ID: {}", promotionId);
+
+        PromotionEntity promotionEntity = getPromotionEntity(promotionId).orElseThrow(() -> {
+            log.error("Promotion with ID {} not found for deletion", promotionId);
+            return new AppExceptionNotFound("Promotion not found");
+        });
+
+        markPromotionAsDeleted(promotionEntity);
+        PromotionEntity deletedPromotion = promotionRepository.save(promotionEntity);
+
+        log.info("Promotion with ID {} deleted successfully", deletedPromotion.getPromotionId());
+        return promotionMapper.mapPromotionEntityToDto(deletedPromotion);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ResponseListPageablePromotion listPromotionByPageOut(int pageNumber, int pageSize, String orderBy, String sortDir) {
+        log.info("Fetching promotions with pagination: pageNumber={}, pageSize={}, orderBy={}, sortDir={}", pageNumber, pageSize, orderBy, sortDir);
+
+        Pageable pageable = createPageable(pageNumber, pageSize, orderBy, sortDir);
+
+        Page<PromotionEntity> promotionsPage = promotionRepository.findAllByStateTrueAmdPageable(pageable);
+
+        if (promotionsPage.isEmpty()) {
+            log.info("No promotions found for given parameters");
+            return null;
+        }
+
+        List<ResponsePromotion> responsePromotions = buildResponsePromotions(promotionsPage);
+        log.info("Found {} promotions", promotionsPage.getTotalElements());
+
+        return new ResponseListPageablePromotion(
+                responsePromotions, promotionsPage.getNumber(),promotionsPage.getSize()
+                , promotionsPage.getTotalPages(),promotionsPage.getTotalElements(), promotionsPage.isLast());
+    }
+
+    @Override
+    public List<PromotionDTO> listPromotionOut() {
+        log.info("Fetching all promotions");
+
+        List<PromotionEntity> promotionEntities = promotionRepository.findAllByStateTrue();
+        return promotionEntities.stream().map(promotionMapper::mapPromotionEntityToDto).toList();
+    }
+
+    // Helper methods for better organization and code readability
+    private PromotionEntity buildPromotionEntity(RequestPromotion requestPromotion) {
+        return PromotionEntity.builder()
                 .promotionName(requestPromotion.getPromotionName())
                 .promotionDescription(requestPromotion.getPromotionDescription())
                 .promotionDiscountRate(requestPromotion.getPromotionDiscountRate())
@@ -58,31 +141,24 @@ public class PromotionAdapter implements PromotionServiceOut {
                 .modifiedByUser("TEST")
                 .state(Constants.STATUS_ACTIVE)
                 .build();
-        PromotionEntity promotionSaved = promotionRepository.save(promotionEntity);
-        logger.info("Promotion '{}' created successfully with ID: {}",promotionSaved.getPromotionName(),promotionSaved.getPromotionId());
-        return promotionMapper.mapPromotionEntityToDto(promotionSaved);
     }
 
-    @Override
-    @Transactional(readOnly = true)
-    public Optional<ResponsePromotion> findPromotionByIdOut(Long promotionId) {
-        logger.info("Searching for promotion with ID: {}", promotionId);
-        PromotionEntity promotionEntity = getPromotionEntity(promotionId).get();
+    private ResponsePromotion buildResponsePromotion(PromotionEntity promotionEntity) {
+        List<ProductCategoryDTO> productCategoryDTOs = promotionEntity.getProductCategoryEntities().stream()
+                .map(productCategoryMapper::mapCategoryEntityToDTO)
+                .toList();
 
-        List<ProductCategoryEntity> productCategoryEntityList = promotionEntity.getProductCategoryEntities().stream().toList();
-        List<ProductCategoryDTO> productCategoryDTOList = productCategoryEntityList.stream().map(productCategoryMapper::mapCategoryEntityToDTO).toList();
-        ResponsePromotion responsePromotion = ResponsePromotion.builder()
+        return ResponsePromotion.builder()
                 .promotionDTO(promotionMapper.mapPromotionEntityToDto(promotionEntity))
-                .productCategoryDTOList(productCategoryDTOList)
+                .productCategoryDTOList(productCategoryDTOs)
                 .build();
-        logger.info("Promotion with ID {} found", promotionId);
-        return Optional.of(responsePromotion);
     }
 
-    @Override
-    public PromotionDTO updatePromotionOut(Long promotionId, RequestPromotion requestPromotion) {
-        logger.info("Searching for update promotion with ID: {}", promotionId);
-        PromotionEntity promotionEntity = getPromotionEntity(promotionId).get();
+    private List<ResponsePromotion> buildResponsePromotions(Page<PromotionEntity> promotionEntities) {
+        return promotionEntities.getContent().stream().map(this::buildResponsePromotion).toList();
+    }
+
+    private void updatePromotionEntity(PromotionEntity promotionEntity, RequestPromotion requestPromotion) {
         promotionEntity.setPromotionName(requestPromotion.getPromotionName());
         promotionEntity.setPromotionDescription(requestPromotion.getPromotionDescription());
         promotionEntity.setPromotionDiscountRate(requestPromotion.getPromotionDiscountRate());
@@ -91,76 +167,25 @@ public class PromotionAdapter implements PromotionServiceOut {
         promotionEntity.setModifiedByUser("TEST");
         promotionEntity.setModifiedAt(Constants.getTimestamp());
         promotionEntity.setProductCategoryEntities(new HashSet<>());
-
-        PromotionEntity promotionEntityUpdated = promotionRepository.save(promotionEntity);
-        logger.info("promotion updated with ID: {}", promotionEntityUpdated.getPromotionId());
-        return promotionMapper.mapPromotionEntityToDto(promotionEntityUpdated);
     }
 
-    @Override
-    public PromotionDTO deletePromotionOut(Long promotionId) {
-        logger.info("Searching promotion for delete with ID: {}", promotionId);
-        Set<ProductCategoryEntity> productCategoryEntitySet = new HashSet<>();
-        PromotionEntity promotionEntityOptional = getPromotionEntity(promotionId).get();
-        promotionEntityOptional.setModifiedByUser("TEST");
-        promotionEntityOptional.setDeletedAt(Constants.getTimestamp());
-        promotionEntityOptional.setProductCategoryEntities(productCategoryEntitySet);
-        promotionEntityOptional.setState(Constants.STATUS_INACTIVE);
-        PromotionEntity promotionDeleted = promotionRepository.save(promotionEntityOptional);
-        logger.info("Product deleted with ID: {}", promotionId);
-        return promotionMapper.mapPromotionEntityToDto(promotionDeleted);
+    private void markPromotionAsDeleted(PromotionEntity promotionEntity) {
+        promotionEntity.setModifiedByUser("TEST");
+        promotionEntity.setDeletedAt(Constants.getTimestamp());
+        promotionEntity.setProductCategoryEntities(new HashSet<>());
+        promotionEntity.setState(Constants.STATUS_INACTIVE);
     }
 
-    @Override
-    @Transactional(readOnly = true)
-    public ResponseListPageablePromotion listPromotionByPageOut(int pageNumber, int pageSize, String orderBy, String sortDir) {
-        logger.info("Searching all promotions with the following parameters: {}", Constants.parametersForLogger(pageNumber, pageSize, orderBy, sortDir));
-
+    private Pageable createPageable(int pageNumber, int pageSize, String orderBy, String sortDir) {
         Sort sort = sortDir.equalsIgnoreCase(Sort.Direction.ASC.name()) ? Sort.by(orderBy).ascending() : Sort.by(orderBy).descending();
-        Pageable pageable = PageRequest.of(pageNumber, pageSize, sort);
-
-        if (promotionRepository.findAllByStateTrueAmdPageable(pageable).isEmpty()) return null;
-
-        Page<PromotionEntity> promotionEntityPage = promotionRepository.findAllByStateTrueAmdPageable(pageable);
-
-        List<ResponsePromotion> responsePromotionList = promotionEntityPage.getContent().stream().map(promotionEntity -> {
-            // Convertir cada PromotionEntity a ResponsePromotion
-            List<ProductCategoryDTO> productCategoryDTOList = promotionEntity.getProductCategoryEntities().stream()
-                    .map(productCategoryMapper::mapCategoryEntityToDTO)
-                    .toList();
-
-            return ResponsePromotion.builder()
-                    .promotionDTO(promotionMapper.mapPromotionEntityToDto(promotionEntity))
-                    .productCategoryDTOList(productCategoryDTOList)
-                    .build();
-        }).toList();
-        logger.info("Promotions found with the following parameters: {}", Constants.parametersForLogger(pageNumber, pageSize, orderBy, sortDir));
-        return ResponseListPageablePromotion.builder()
-                .responsePromotionList(responsePromotionList)
-                .pageNumber(promotionEntityPage.getNumber())
-                .totalElements(promotionEntityPage.getTotalElements())
-                .totalPages(promotionEntityPage.getTotalPages())
-                .pageSize(promotionEntityPage.getSize())
-                .end(promotionEntityPage.isLast())
-                .build();
-    }
-
-    @Override
-    public List<PromotionDTO> listPromotionOut() {
-        logger.info("Searching all promotions");
-        List<PromotionEntity> promotionEntityList = promotionRepository.findAllByStateTrue();
-
-        return promotionEntityList.stream().map(promotionMapper::mapPromotionEntityToDto).toList();
+        return PageRequest.of(pageNumber, pageSize, sort);
     }
 
     private boolean promotionExistByName(String promotionName) {
         return promotionRepository.existsByPromotionName(promotionName);
     }
-    private boolean promotionExistById(Long promotionId) {
-        return promotionRepository.existsByPromotionIdAndStateTrue(promotionId);
-    }
+
     private Optional<PromotionEntity> getPromotionEntity(Long promotionId) {
-        if (!promotionExistById(promotionId)) throw new AppExceptionNotFound("The promotion does not exist.");
         return promotionRepository.findPromotionByIdWithStateTrue(promotionId);
     }
 }

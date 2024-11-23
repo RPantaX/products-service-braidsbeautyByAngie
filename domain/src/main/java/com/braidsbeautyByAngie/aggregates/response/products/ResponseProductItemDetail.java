@@ -17,6 +17,7 @@ public class ResponseProductItemDetail {
     private int productItemQuantityInStock;
     private String productItemImage;
     private BigDecimal productItemPrice;
+    private ResponseCategoryy responseCategoryy;
     private List<ResponseVariationn> variations;
 
 }

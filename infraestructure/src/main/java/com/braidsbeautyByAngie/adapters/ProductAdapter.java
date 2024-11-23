@@ -33,17 +33,10 @@ import java.util.stream.Collectors;
 public class ProductAdapter implements ProductServiceOut {
 
     private final ProductMapper productMapper;
-    private final ProductCategoryMapper productCategoryMapper;
     private final PromotionMapper promotionMapper;
-    private final VariationOptionMapper variationOptionMapper;
-
     private final ProductRepository productRepository;
     private final ProductCategoryRepository productCategoryRepository;
-    private final PromotionRepository promotionRepository;
-
     private static final Logger logger = LoggerFactory.getLogger(ProductAdapter.class);
-    private final ProductItemMapper productItemMapper;
-    private final ItemProductAdapter itemProductAdapter;
     private final ProductItemRepository productItemRepository;
 
     @Transactional
@@ -73,7 +66,7 @@ public class ProductAdapter implements ProductServiceOut {
     @Override
     @Transactional(readOnly = true)
     public ResponseProduct findProductByIdOut(Long productId) {
-        List<Object[]> results = productRepository.findProductDetailsById(productId);
+        List<Object[]> results = productRepository.findProductDetailWithCategoryById(productId);
         if (results.isEmpty()) {
             throw new AppExceptionNotFound("Product not found with ID: " + productId);
         }

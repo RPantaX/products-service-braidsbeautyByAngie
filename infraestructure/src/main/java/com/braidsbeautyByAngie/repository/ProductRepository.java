@@ -62,21 +62,16 @@ public interface ProductRepository extends JpaRepository<ProductEntity,Long> {
            pc.productCategoryId AS productCategoryId,
            pc.productCategoryName AS productCategoryName,
            pr.promotionId AS promotionId,
-           pr.promotionName AS promotionName,
-           pr.promotionDescription AS promotionDescription,
-           pr.promotionDiscountRate AS promotionDiscountRate,
-           pr.promotionStartDate AS promotionStartDate,
-           pr.promotionEndDate AS promotionEndDate
+           pr.promotionName AS promotionName
     FROM ProductEntity p
     LEFT JOIN p.productItemEntities pi
     LEFT JOIN pi.variationOptionEntitySet vo
     LEFT JOIN vo.variationEntity v
     LEFT JOIN p.productCategoryEntity pc
     LEFT JOIN pc.promotionEntities pr
-    WHERE p.productId = :productId
-      AND p.state = true
+    WHERE p.productId = :productId AND p.state = true
 """)
-    List<Object[]> findProductDetailsByIdWithCategory(@Param("productId") Long productId);
+    List<Object[]> findProductDetailWithCategoryById(@Param("productId") Long productId);
 
     @Query(value = "SELECT p.Product_ID AS productId, p.Product_Name AS productName, " +
             "p.Product_Description AS productDescription, p.Product_Image AS productImage, " +

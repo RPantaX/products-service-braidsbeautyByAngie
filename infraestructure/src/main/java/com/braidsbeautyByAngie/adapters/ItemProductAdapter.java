@@ -2,8 +2,10 @@ package com.braidsbeautyByAngie.adapters;
 
 import com.braidsbeautyByAngie.aggregates.constants.Constants;
 import com.braidsbeautyByAngie.aggregates.dto.ProductItemDTO;
+import com.braidsbeautyByAngie.aggregates.dto.PromotionDTO;
 import com.braidsbeautyByAngie.aggregates.request.RequestItemProduct;
 import com.braidsbeautyByAngie.aggregates.request.RequestVariationName;
+import com.braidsbeautyByAngie.aggregates.response.categories.ResponseCategoryy;
 import com.braidsbeautyByAngie.aggregates.response.products.*;
 import com.braidsbeautyByAngie.entity.*;
 import com.braidsbeautyByAngie.mapper.*;
@@ -28,14 +30,11 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class ItemProductAdapter implements ItemProductServiceOut {
-    private final ProductMapper productMapper;
-    private final ProductCategoryMapper productCategoryMapper;
     private final PromotionMapper promotionMapper;
-    private final VariationMapper variationMapper;
-    private final VariationOptionMapper variationOptionMapper;
     private final ProductItemMapper productItemMapper;
 
     private final ProductItemRepository productItemRepository;
+    private final ProductCategoryRepository productCategoryRepository;
     private final ProductRepository productRepository;
     private final VariationRepository variationRepository;
     private final VariationOptionRepository variationOptionRepository;
@@ -75,6 +74,27 @@ public class ItemProductAdapter implements ItemProductServiceOut {
         if (results.isEmpty()) {
             throw new AppExceptionNotFound("Product Item not found");
         }
+        ProductItemEntity productItemEntity = productItemRepository.findById(itemProductId).orElseThrow(() ->
+                new AppExceptionNotFound("Product Item not found with ID: " + itemProductId));
+        Long productId = productItemEntity.getProductEntity().getProductId();
+        ProductEntity productEntity = productRepository.findProductByProductIdWithStateTrue( productItemEntity.getProductEntity().getProductId()).orElseThrow(() ->
+                new AppExceptionNotFound("Product not found with ID: " + productId));
+
+        ProductCategoryEntity productCategory = productCategoryRepository.findProductCategoryIdAndStateTrue(
+                Optional.ofNullable(productEntity.getProductCategoryEntity())
+                        .map(ProductCategoryEntity::getProductCategoryId)
+                        .orElseThrow(() -> new AppExceptionNotFound("Category not found"))
+        ).orElseThrow(() -> new AppExceptionNotFound("Category not found"));
+
+        List<PromotionDTO> promotionDTOList = productCategory.getPromotionEntities().stream()
+                .map(promotionMapper::mapPromotionEntityToDto)
+                .collect(Collectors.toList());
+
+        ResponseCategoryy responseCategoryy = ResponseCategoryy.builder()
+                .productCategoryId(productCategory.getProductCategoryId())
+                .productCategoryName(productCategory.getProductCategoryName())
+                .promotionDTOList(promotionDTOList)
+                .build();
 
         // Tomar los datos generales del primer resultado
         Object[] firstResult = results.get(0);
@@ -84,7 +104,7 @@ public class ItemProductAdapter implements ItemProductServiceOut {
         dto.setProductItemQuantityInStock((Integer) firstResult[2]);
         dto.setProductItemImage((String) firstResult[3]);
         dto.setProductItemPrice((BigDecimal) firstResult[4]);
-
+        dto.setResponseCategoryy(responseCategoryy);
         // Construir la lista de variaciones
         List<ResponseVariationn> variations = results.stream()
                 .map(result -> new ResponseVariationn((String) result[5], (String) result[6]))
