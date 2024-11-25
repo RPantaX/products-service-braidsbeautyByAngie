@@ -2,6 +2,7 @@ package com.braidsbeautyByAngie.controller;
 
 import com.braidsbeautyByAngie.aggregates.dto.ProductItemDTO;
 import com.braidsbeautyByAngie.aggregates.request.RequestItemProduct;
+import com.braidsbeautyByAngie.aggregates.request.RequestProductIds;
 import com.braidsbeautyByAngie.aggregates.response.products.ResponseItemProduct;
 import com.braidsbeautyByAngie.aggregates.response.products.ResponseProductItemDetail;
 import com.braidsbeautyByAngie.ports.in.ItemProductServiceIn;
@@ -12,6 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Optional;
 @OpenAPIDefinition(
         info = @Info(
@@ -31,6 +33,12 @@ public class ItemProductController {
     public ResponseEntity<ResponseProductItemDetail> listItemProductById(@PathVariable(name = "itemProductId") Long itemProductId){
         return ResponseEntity.ok(productServiceIn.findItemProductByIdIn(itemProductId));
     }
+
+    @GetMapping("/list")
+    public ResponseEntity<List<ResponseProductItemDetail>> listItemProductsByIds(@RequestParam List<Long> ids){
+        return ResponseEntity.ok(productServiceIn.listItemProductsByIdsIn(ids));
+    }
+
     @PostMapping()
     public ResponseEntity<ProductItemDTO> saveItemProduct(@RequestBody RequestItemProduct requestItemProduct){
         return new ResponseEntity<>(productServiceIn.createItemProductIn(requestItemProduct), HttpStatus.CREATED);

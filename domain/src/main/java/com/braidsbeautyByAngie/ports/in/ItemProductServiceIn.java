@@ -24,5 +24,5 @@ public interface ItemProductServiceIn {
     List<Product> reserveProductIn(Long shopOrderId, List<Product> desiredProducts);
 
     void cancelProductReservationIn(Long shopOrderId, List<Product> productsToCancel);
-
+    List<ResponseProductItemDetail> listItemProductsByIdsIn(List<Long> itemProductIds);
 }

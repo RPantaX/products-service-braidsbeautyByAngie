@@ -51,5 +51,10 @@ public class ItemProductServiceImpl implements ItemProductServiceIn {
         itemProductServiceOut.cancelProductReservationOut(shopOrderId, productsToCancel);
     }
 
+    @Override
+    public List<ResponseProductItemDetail> listItemProductsByIdsIn(List<Long> itemProductIds) {
+        return itemProductServiceOut.listItemProductsByIdsOut(itemProductIds);
+    }
+
 
 }

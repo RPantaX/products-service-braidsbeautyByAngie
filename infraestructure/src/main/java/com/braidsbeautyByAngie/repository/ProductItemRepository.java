@@ -32,16 +32,21 @@ public interface ProductItemRepository extends JpaRepository<ProductItemEntity, 
     """)
     List<Object[]> findProductItemWithVariations(@Param("productItemId") Long productItemId);
 
-    @Query("SELECT pi.productItemId, pi.productItemSKU, pi.productItemQuantityInStock, pi.productItemImage, pi.productItemPrice, " +
-            "vo.variationOptionValue, v.variationName, pc.productCategoryId, pc.productCategoryName, " +
-            "p.promotionId, p.promotionName, p.promotionDescription, p.promotionDiscountRate, p.promotionStartDate, p.promotionEndDate " +
-            "FROM ProductItemEntity pi " +
-            "JOIN pi.productEntity pEntity " +
-            "JOIN pEntity.productCategoryEntity pc " +
-            "LEFT JOIN pi.variationOptionEntitySet vo " +
-            "LEFT JOIN vo.variationEntity v " +
-            "LEFT JOIN pEntity.productCategoryEntity.promotionEntities p " +
-            "WHERE pi.productItemId = :itemProductId")
-    List<Object[]> findProductItemWithVariationsWithCategory(@Param("itemProductId") Long itemProductId);
+    @Query(value = """
+    SELECT pi.productItemId AS productItemId, 
+           pi.productItemSKU AS productItemSKU, 
+           pi.productItemQuantityInStock AS productItemQuantityInStock, 
+           pi.productItemImage AS productItemImage, 
+           pi.productItemPrice AS productItemPrice, 
+           v.variationName AS variationName, 
+           vo.variationOptionValue AS variationOptionValue
+    FROM ProductItemEntity pi
+    JOIN pi.variationOptionEntitySet vo
+    JOIN vo.variationEntity v
+    WHERE pi.productItemId IN :productItemIds
+      AND pi.state = true
+""")
+    List<Object[]> findProductItemsWithVariations(@Param("productItemIds") List<Long> productItemIds);
+
 
 }
