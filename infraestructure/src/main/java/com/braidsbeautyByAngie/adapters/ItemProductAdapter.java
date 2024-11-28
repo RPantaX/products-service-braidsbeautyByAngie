@@ -41,12 +41,11 @@ public class ItemProductAdapter implements ItemProductServiceOut {
     private final VariationRepository variationRepository;
     private final VariationOptionRepository variationOptionRepository;
 
-    private static final Logger logger = LoggerFactory.getLogger(ItemProductAdapter.class);
 
     @Transactional
     @Override
     public ProductItemDTO createItemProductOut(RequestItemProduct requestItemProduct) {
-        logger.info("Creating itemProduct id parent: {}", requestItemProduct.getProductId());
+        log.info("Creating itemProduct id parent: {}", requestItemProduct.getProductId());
         if (productItemExistsBySKU(requestItemProduct.getProductItemSKU())) throw new AppException("The sku already exists.");
         ProductEntity productEntity = validateAndGetProduct(requestItemProduct.getProductId());
         //varation
@@ -64,7 +63,7 @@ public class ItemProductAdapter implements ItemProductServiceOut {
                 .build();
 
         ProductItemEntity productItemEntitySaved =  productItemRepository.save(productItemEntity);
-        logger.info("itemProduct '{}' created successfully with ID: {}", productItemEntity.getProductItemId(), productItemEntity.getProductEntity().getProductId());
+        log.info("itemProduct '{}' created successfully with ID: {}", productItemEntity.getProductItemId(), productItemEntity.getProductEntity().getProductId());
         return productItemMapper.mapProductItemEntityToDto(productItemEntitySaved);
     }
 
@@ -73,6 +72,7 @@ public class ItemProductAdapter implements ItemProductServiceOut {
         List<Object[]> results = productItemRepository.findProductItemWithVariations(itemProductId);
 
         if (results.isEmpty()) {
+            log.error("Product Item not found with ID: {}", itemProductId);
             throw new AppExceptionNotFound("Product Item not found");
         }
         return buildProductItemDetail(itemProductId, results);
@@ -80,7 +80,7 @@ public class ItemProductAdapter implements ItemProductServiceOut {
     @Transactional
     @Override
     public ProductItemDTO updateItemProductOut(Long itemProductId, RequestItemProduct requestItemProduct) {
-        logger.info("Searching for update product with ID: {}", itemProductId);
+        log.info("Searching for update product with ID: {}", itemProductId);
 
         if(!productRepository.existsById(itemProductId)) throw new AppExceptionNotFound("The product doesn't  exists.");
         //varation
@@ -98,14 +98,14 @@ public class ItemProductAdapter implements ItemProductServiceOut {
                 .modifiedByUser("TEST-UPDATED")
                 .build();
         ProductItemEntity productItemSaved = productItemRepository.save(productItemEntity1);
-        logger.info("itemProduct updated with ID: {}", productItemSaved.getProductItemId());
+        log.info("itemProduct updated with ID: {}", productItemSaved.getProductItemId());
         return productItemMapper.mapProductItemEntityToDto(productItemSaved);
     }
 
 
     @Override
     public ProductItemDTO deleteItemProductOut(Long itemProductId) {
-        logger.info("Searching itemProduct for delete with ID: {}", itemProductId);
+        log.info("Searching itemProduct for delete with ID: {}", itemProductId);
 
         ProductItemEntity productItemEntityOptional = getProductItemById(itemProductId).orElseThrow(
                 ()-> new AppExceptionNotFound("The itemProduct does not exist.")
@@ -116,7 +116,7 @@ public class ItemProductAdapter implements ItemProductServiceOut {
         productItemEntityOptional.setProductEntity(null);
         ProductItemEntity itemProductDeleted = productItemRepository.save(productItemEntityOptional);
 
-        logger.info("Product deleted with ID: {}", itemProductDeleted.getProductItemId());
+        log.info("Product deleted with ID: {}", itemProductDeleted.getProductItemId());
 
         return productItemMapper.mapProductItemEntityToDto(itemProductDeleted);
     }
@@ -192,7 +192,10 @@ public class ItemProductAdapter implements ItemProductServiceOut {
         return requestVariationNameList.stream().map(
                 requestVariationName -> {
                     VariationEntity variationEntity = variationRepository.findByVariationName(requestVariationName.getVariationName()).orElseThrow(
-                            ()-> new AppExceptionNotFound("The variation does not exist.")
+                            ()-> {
+                                log.error("The variation does not exist.");
+                                return new AppExceptionNotFound("The variation does not exist.");
+                            }
                     );
                     if (variationOptionRepository.existsByVariationOptionValue(requestVariationName.getVariationOptionValue())) {
                         return variationOptionRepository.findByVariationOptionValue(requestVariationName.getVariationOptionValue()).get();
@@ -210,17 +213,26 @@ public class ItemProductAdapter implements ItemProductServiceOut {
 
     private ProductEntity validateAndGetProduct(Long productId) {
         return productRepository.findById(productId)
-                .orElseThrow(() -> new AppExceptionNotFound("Product not found with ID: " + productId));
+                .orElseThrow(() -> {
+                    log.error("Product not found with ID: {}", productId);
+                    return new AppExceptionNotFound("Product not found with ID: " + productId);
+                });
     }
 
     private ProductCategoryEntity validateAndGetCategory(Long categoryId) {
         return productCategoryRepository.findProductCategoryIdAndStateTrue(categoryId)
-                .orElseThrow(() -> new AppExceptionNotFound("Category not found with ID: " + categoryId));
+                .orElseThrow(() -> {
+                    log.error("Category not found with ID: {}", categoryId);
+                    return new AppExceptionNotFound("Category not found with ID: " + categoryId);
+                });
     }
 
     private ProductItemEntity validateAndGetProductItem(Long itemProductId) {
         return productItemRepository.findById(itemProductId)
-                .orElseThrow(() -> new AppExceptionNotFound("Product Item not found with ID: " + itemProductId));
+                .orElseThrow(() -> {
+                    log.error("Product Item not found with ID: {}", itemProductId);
+                    return new AppExceptionNotFound("Product Item not found with ID: " + itemProductId);
+                });
     }
     private List<PromotionDTO> mapPromotionsToDTOs(Set<PromotionEntity> promotionEntities) {
         return promotionEntities.stream()
@@ -268,5 +280,6 @@ public class ItemProductAdapter implements ItemProductServiceOut {
                     return productItemEntity;
                 }).toList();
         productItemRepository.saveAll(productItemEntityList);
+        log.info("Stock updated successfully");
     }
 }

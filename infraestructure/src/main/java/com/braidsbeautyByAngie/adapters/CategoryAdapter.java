@@ -22,8 +22,7 @@ import com.braidsbeautybyangie.sagapatternspringboot.aggregates.AppExceptions.Ap
 import com.braidsbeautybyangie.sagapatternspringboot.aggregates.AppExceptions.AppExceptionNotFound;
 import lombok.RequiredArgsConstructor;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -39,8 +38,8 @@ import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class CategoryAdapter implements CategoryServiceOut {
-    private static final Logger logger = LoggerFactory.getLogger(CategoryAdapter.class);
 
     private final ProductCategoryRepository productCategoryRepository;
     private final PromotionRepository promotionRepository;
@@ -54,12 +53,12 @@ public class CategoryAdapter implements CategoryServiceOut {
     @Override
     @Transactional
     public ProductCategoryDTO createCategoryOut(RequestCategory requestCategory) {
-        logger.info("Attempting to create category: {}", requestCategory.getProductCategoryName());
+        log.info("Attempting to create category: {}", requestCategory.getProductCategoryName());
         validateCategoryName(requestCategory.getProductCategoryName());
 
         ProductCategoryEntity categoryEntity = buildCategoryEntity(requestCategory);
         ProductCategoryEntity savedCategory = productCategoryRepository.save(categoryEntity);
-        logger.info("Category created successfully: ID={}, Name={}", savedCategory.getProductCategoryId(), savedCategory.getProductCategoryName());
+        log.info("Category created successfully: ID={}, Name={}", savedCategory.getProductCategoryId(), savedCategory.getProductCategoryName());
 
         return productCategoryMapper.mapCategoryEntityToDTO(savedCategory);
     }
@@ -69,14 +68,14 @@ public class CategoryAdapter implements CategoryServiceOut {
      */
     @Override
     public ProductCategoryDTO createSubCategoryOut(RequestSubCategory requestSubCategory) {
-        logger.info("Attempting to create subcategory: {}", requestSubCategory.getProductSubCategoryName());
+        log.info("Attempting to create subcategory: {}", requestSubCategory.getProductSubCategoryName());
         validateCategoryName(requestSubCategory.getProductSubCategoryName());
 
         ProductCategoryEntity parentCategory = fetchCategoryById(requestSubCategory.getProductCategoryParentId());
         ProductCategoryEntity subCategoryEntity = buildSubCategoryEntity(requestSubCategory, parentCategory);
         ProductCategoryEntity savedSubCategory = productCategoryRepository.save(subCategoryEntity);
 
-        logger.info("Subcategory created successfully: ID={}, Name={}", savedSubCategory.getProductCategoryId(), savedSubCategory.getProductCategoryName());
+        log.info("Subcategory created successfully: ID={}, Name={}", savedSubCategory.getProductCategoryId(), savedSubCategory.getProductCategoryName());
         return productCategoryMapper.mapCategoryEntityToDTO(savedSubCategory);
     }
 
@@ -86,11 +85,11 @@ public class CategoryAdapter implements CategoryServiceOut {
     @Override
     @Transactional(readOnly = true)
     public Optional<ResponseCategory> findCategoryByIdOut(Long categoryId) {
-        logger.info("Fetching category by ID: {}", categoryId);
+        log.info("Fetching category by ID: {}", categoryId);
         ProductCategoryEntity categoryEntity = fetchCategoryById(categoryId);
 
         ResponseCategory responseCategory = buildResponseCategory(categoryEntity);
-        logger.info("Category found: ID={}, Name={}", categoryEntity.getProductCategoryId(), categoryEntity.getProductCategoryName());
+        log.info("Category found: ID={}, Name={}", categoryEntity.getProductCategoryId(), categoryEntity.getProductCategoryName());
         return Optional.of(responseCategory);
     }
 
@@ -100,13 +99,13 @@ public class CategoryAdapter implements CategoryServiceOut {
     @Override
     @Transactional
     public ProductCategoryDTO updateCategoryOut(RequestCategory requestCategory, Long categoryId) {
-        logger.info("Updating category: ID={}", categoryId);
+        log.info("Updating category: ID={}", categoryId);
         ProductCategoryEntity existingCategory = fetchCategoryById(categoryId);
 
         updateCategoryEntity(existingCategory, requestCategory);
         ProductCategoryEntity updatedCategory = productCategoryRepository.save(existingCategory);
 
-        logger.info("Category updated successfully: ID={}, Name={}", updatedCategory.getProductCategoryId(), updatedCategory.getProductCategoryName());
+        log.info("Category updated successfully: ID={}, Name={}", updatedCategory.getProductCategoryId(), updatedCategory.getProductCategoryName());
         return productCategoryMapper.mapCategoryEntityToDTO(updatedCategory);
     }
 
@@ -115,13 +114,13 @@ public class CategoryAdapter implements CategoryServiceOut {
      */
     @Override
     public ProductCategoryDTO deleteCategoryOut(Long categoryId) {
-        logger.info("Deleting category: ID={}", categoryId);
+        log.info("Deleting category: ID={}", categoryId);
         ProductCategoryEntity existingCategory = fetchCategoryById(categoryId);
 
         deactivateCategory(existingCategory);
         ProductCategoryEntity deletedCategory = productCategoryRepository.save(existingCategory);
 
-        logger.info("Category deleted successfully: ID={}", deletedCategory.getProductCategoryId());
+        log.info("Category deleted successfully: ID={}", deletedCategory.getProductCategoryId());
         return productCategoryMapper.mapCategoryEntityToDTO(deletedCategory);
     }
 
@@ -131,7 +130,7 @@ public class CategoryAdapter implements CategoryServiceOut {
     @Override
     @Transactional(readOnly = true)
     public ResponseListPageableCategory listCategoryPageableOut(int pageNumber, int pageSize, String orderBy, String sortDir) {
-        logger.info("Listing categories with pagination: page={}, size={}, orderBy={}, sortDir={}", pageNumber, pageSize, orderBy, sortDir);
+        log.info("Listing categories with pagination: page={}, size={}, orderBy={}, sortDir={}", pageNumber, pageSize, orderBy, sortDir);
         Sort sort = sortDir.equalsIgnoreCase(Sort.Direction.ASC.name()) ? Sort.by(orderBy).ascending() : Sort.by(orderBy).descending();
         Pageable pageable = PageRequest.of(pageNumber, pageSize, sort);
 
@@ -140,7 +139,7 @@ public class CategoryAdapter implements CategoryServiceOut {
                 .map(this::buildResponseCategoryPageable)
                 .toList();
 
-        logger.info("Categories retrieved: totalPages={}, totalElements={}", categoryPage.getTotalPages(), categoryPage.getTotalElements());
+        log.info("Categories retrieved: totalPages={}, totalElements={}", categoryPage.getTotalPages(), categoryPage.getTotalElements());
         return buildResponseListPageableCategory(categoryPage, categoryList);
     }
 
@@ -149,7 +148,7 @@ public class CategoryAdapter implements CategoryServiceOut {
      */
     @Override
     public List<ProductCategoryDTO> listCategoryOut() {
-        logger.info("Fetching all categories");
+        log.info("Fetching all categories");
         return productCategoryRepository.findAll().stream()
                 .map(productCategoryMapper::mapCategoryEntityToDTO)
                 .toList();
@@ -159,7 +158,7 @@ public class CategoryAdapter implements CategoryServiceOut {
 
     private void validateCategoryName(String categoryName) {
         if (Boolean.TRUE.equals(productCategoryRepository.existsByProductCategoryName(categoryName))) {
-            logger.error("Category name '{}' already exists", categoryName);
+            log.error("Category name '{}' already exists", categoryName);
             throw new AppException("The name of the category already exists");
         }
     }

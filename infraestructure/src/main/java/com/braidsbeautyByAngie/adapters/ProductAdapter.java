@@ -14,8 +14,7 @@ import com.braidsbeautybyangie.sagapatternspringboot.aggregates.AppExceptions.Ap
 import com.braidsbeautybyangie.sagapatternspringboot.aggregates.AppExceptions.AppExceptionNotFound;
 import lombok.RequiredArgsConstructor;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -30,19 +29,19 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ProductAdapter implements ProductServiceOut {
 
     private final ProductMapper productMapper;
     private final PromotionMapper promotionMapper;
     private final ProductRepository productRepository;
     private final ProductCategoryRepository productCategoryRepository;
-    private static final Logger logger = LoggerFactory.getLogger(ProductAdapter.class);
     private final ProductItemRepository productItemRepository;
 
     @Transactional
     @Override
     public ProductDTO createProductOut(RequestProduct requestProduct) {
-        logger.info("Creating product with name: {}", requestProduct.getProductName());
+        log.info("Creating product with name: {}", requestProduct.getProductName());
         if(productNameExistsByName(requestProduct.getProductName())) throw new AppException("The product name already exists");
         ProductCategoryEntity productCategorySaved = productCategoryRepository.findProductCategoryIdAndStateTrue(requestProduct.getProductCategoryId()).orElseThrow(()->
                 new AppExceptionNotFound("Category not found"));
@@ -59,7 +58,7 @@ public class ProductAdapter implements ProductServiceOut {
 
         ProductEntity productEntitySaved = productRepository.save(productEntity);
 
-        logger.info("Product '{}' created successfully with ID: {}",productEntity.getProductName(),productEntity.getProductId());
+        log.info("Product '{}' created successfully with ID: {}",productEntity.getProductName(),productEntity.getProductId());
         return productMapper.mapProductEntityToDto(productEntitySaved);
     }
 
@@ -132,43 +131,48 @@ public class ProductAdapter implements ProductServiceOut {
     @Transactional
     @Override
     public ProductDTO updateProductOut(Long productId, RequestProduct requestProduct) {
-        logger.info("Searching for update product with ID: {}", productId);
-        Optional<ProductEntity> productEntitySaved = getProductEntity(productId);
+        log.info("Searching for update product with ID: {}", productId);
+        ProductEntity productEntitySaved = getProductEntity(productId);
 
-        if(!productEntitySaved.get().getProductName().equalsIgnoreCase(requestProduct.getProductName()) && productNameExistsByName(requestProduct.getProductName())) {throw new RuntimeException("The product name already exists");}
+        if(!productEntitySaved.getProductName().equalsIgnoreCase(requestProduct.getProductName()) && productNameExistsByName(requestProduct.getProductName())) {throw new RuntimeException("The product name already exists");}
 
         if(requestProduct.getProductCategoryId() !=null && productCategoryRepository.existByProductCategoryIdAndStateTrue(requestProduct.getProductCategoryId())) {
             ProductCategoryEntity productCategorySaved = productCategoryRepository.findProductCategoryIdAndStateTrue(requestProduct.getProductCategoryId()).orElseThrow(()->
                     new AppExceptionNotFound("Category not found"));
-            productEntitySaved.get().setProductCategoryEntity(productCategorySaved);
+            productEntitySaved.setProductCategoryEntity(productCategorySaved);
 
         }
-        productEntitySaved.get().setModifiedByUser("TEST-UPDATED");
-        productEntitySaved.get().setModifiedAt(Constants.getTimestamp());
-        productEntitySaved.get().setProductName(requestProduct.getProductName());
-        productEntitySaved.get().setProductDescription(requestProduct.getProductDescription());
-        productEntitySaved.get().setProductImage(requestProduct.getProductImage());
-        ProductEntity productEntityUpdated =productRepository.save(productEntitySaved.get());
-        logger.info("product updated with ID: {}", productEntitySaved.get().getProductId());
+        productEntitySaved.setModifiedByUser("TEST-UPDATED");
+        productEntitySaved.setModifiedAt(Constants.getTimestamp());
+        productEntitySaved.setProductName(requestProduct.getProductName());
+        productEntitySaved.setProductDescription(requestProduct.getProductDescription());
+        productEntitySaved.setProductImage(requestProduct.getProductImage());
+        ProductEntity productEntityUpdated =productRepository.save(productEntitySaved);
+        log.info("product updated with ID: {}", productEntitySaved.getProductId());
         return productMapper.mapProductEntityToDto(productEntityUpdated);
     }
     @Override
     public ProductDTO deleteProductOut(Long productId) {
-        logger.info("Searching product for delete with ID: {}", productId);
-        Optional<ProductEntity> productEntitySaved = getProductEntity(productId);
-        List<ProductItemEntity> productItemEntities = productEntitySaved.get().getProductItemEntities();
+        log.info("Searching product for delete with ID: {}", productId);
+        ProductEntity productEntitySaved = getProductEntity(productId);
+        List<ProductItemEntity> productItemEntities = productEntitySaved.getProductItemEntities();
         productItemEntities.forEach(productItemEntity -> {
             productItemEntity.setState(Constants.STATUS_INACTIVE);
             productItemEntity.setDeletedAt(Constants.getTimestamp());
             productItemEntity.setModifiedByUser("TEST-PRODUCT");
         });
-        productItemRepository.saveAll(productItemEntities);
-        productEntitySaved.get().setModifiedByUser("TEST");
-        productEntitySaved.get().setProductCategoryEntity(null);
-        productEntitySaved.get().setDeletedAt(Constants.getTimestamp());
-        productEntitySaved.get().setState(Constants.STATUS_INACTIVE);
-        logger.info("Product deleted with ID: {}", productId);
-        return productMapper.mapProductEntityToDto(productRepository.save(productEntitySaved.get()));
+        try {
+            productItemRepository.saveAll(productItemEntities);
+        } catch (Exception e) {
+            log.error("Error deleting product items: {}", e.getMessage());
+            throw new AppException("Error deleting product items");
+        }
+        productEntitySaved.setModifiedByUser("TEST");
+        productEntitySaved.setProductCategoryEntity(null);
+        productEntitySaved.setDeletedAt(Constants.getTimestamp());
+        productEntitySaved.setState(Constants.STATUS_INACTIVE);
+        log.info("Product deleted with ID: {}", productId);
+        return productMapper.mapProductEntityToDto(productRepository.save(productEntitySaved));
     }
 
 
@@ -176,7 +180,7 @@ public class ProductAdapter implements ProductServiceOut {
     @Transactional(readOnly = true)
     public ResponseListPageableProduct listProductPageableOut(int pageNumber, int pageSize, String orderBy, String sortDir) {
 
-        logger.info("Searching all products with the following parameters: {}",Constants.parametersForLogger(pageNumber, pageSize, orderBy, sortDir));
+        log.info("Searching all products with the following parameters: {}",Constants.parametersForLogger(pageNumber, pageSize, orderBy, sortDir));
 
         Sort sort = sortDir.equalsIgnoreCase(Sort.Direction.ASC.name()) ? Sort.by(orderBy).ascending() :
                 Sort.by(orderBy).descending();
@@ -187,11 +191,15 @@ public class ProductAdapter implements ProductServiceOut {
         // Convertir entidades a DTOs
         List<ResponseProduct> responseProductList = productPage.getContent().stream().map(product -> {
 
-            ProductEntity productEntity = productRepository.findProductByProductIdWithStateTrue(product.getProductId()).orElseThrow(()->
-                    new AppExceptionNotFound("Product not found with ID: "+product.getProductId()));
+            ProductEntity productEntity = productRepository.findProductByProductIdWithStateTrue(product.getProductId()).orElseThrow(()-> {
+                log.error("Product not found with ID: {}", product.getProductId());
+                return new AppExceptionNotFound("Product not found with ID: " + product.getProductId());
+            });
 
-            ProductCategoryEntity productCategory = productCategoryRepository.findProductCategoryIdAndStateTrue(productEntity.getProductCategoryEntity().getProductCategoryId()).orElseThrow(()->
-                    new AppExceptionNotFound("Category not found"));
+            ProductCategoryEntity productCategory = productCategoryRepository.findProductCategoryIdAndStateTrue(productEntity.getProductCategoryEntity().getProductCategoryId()).orElseThrow(()-> {
+                log.error("Category not found");
+                return new AppExceptionNotFound("Category not found");
+            });
             List<PromotionDTO> promotionDTOList = productCategory.getPromotionEntities().stream()
                     .map(promotionMapper::mapPromotionEntityToDto)
                     .collect(Collectors.toList());
@@ -248,12 +256,12 @@ public class ProductAdapter implements ProductServiceOut {
 
 
     private boolean productNameExistsByName(String productName){ return productRepository.existsByProductName(productName); }
-    private boolean productExistsById(Long productId) {
-        return productRepository.existsByProductIdWithStateTrue(productId);
-    }
-    private Optional<ProductEntity> getProductEntity(Long productId) {
-        if(!productExistsById(productId)) throw new AppExceptionNotFound("The product does not exist.");
-        return productRepository.findProductByProductIdWithStateTrue(productId);
+
+    private ProductEntity getProductEntity(Long productId) {
+        return productRepository.findProductByProductIdWithStateTrue(productId).orElseThrow(() -> {
+            log.error("Product not found with ID: {}", productId);
+            return new AppExceptionNotFound("The product does not exist.");
+        });
     }
 
 }
