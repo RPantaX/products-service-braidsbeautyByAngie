@@ -150,7 +150,7 @@ public class PromotionAdapter implements PromotionServiceOut {
 
         return ResponsePromotion.builder()
                 .promotionDTO(promotionMapper.mapPromotionEntityToDto(promotionEntity))
-                .productCategoryDTOList(productCategoryDTOs)
+                .categoryDTOList(productCategoryDTOs)
                 .build();
     }
 

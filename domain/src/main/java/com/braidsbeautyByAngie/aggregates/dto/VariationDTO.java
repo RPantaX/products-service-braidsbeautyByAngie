@@ -2,7 +2,7 @@ package com.braidsbeautyByAngie.aggregates.dto;
 
 import lombok.*;
 
-import java.sql.Timestamp;
+import java.util.List;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -14,5 +14,7 @@ public class VariationDTO {
     private Long variationId;
 
     private String variationName;
+
+    List<VariationOptionDTO> variationOptionEntities;
 }
 

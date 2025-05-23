@@ -53,8 +53,8 @@ public class CategoryAdapter implements CategoryServiceOut {
     @Override
     @Transactional
     public ProductCategoryDTO createCategoryOut(RequestCategory requestCategory) {
-        log.info("Attempting to create category: {}", requestCategory.getProductCategoryName());
-        validateCategoryName(requestCategory.getProductCategoryName());
+        log.info("Attempting to create category: {}", requestCategory.getCategoryName());
+        validateCategoryName(requestCategory.getCategoryName());
 
         ProductCategoryEntity categoryEntity = buildCategoryEntity(requestCategory);
         ProductCategoryEntity savedCategory = productCategoryRepository.save(categoryEntity);
@@ -174,7 +174,7 @@ public class CategoryAdapter implements CategoryServiceOut {
                 : new HashSet<>(promotionRepository.findAllByPromotionIdAndStateTrue(requestCategory.getPromotionListId()));
 
         return ProductCategoryEntity.builder()
-                .productCategoryName(requestCategory.getProductCategoryName())
+                .productCategoryName(requestCategory.getCategoryName())
                 .createdAt(Constants.getTimestamp())
                 .state(Constants.STATUS_ACTIVE)
                 .promotionEntities(promotions)
@@ -197,7 +197,7 @@ public class CategoryAdapter implements CategoryServiceOut {
                 ? new HashSet<>()
                 : new HashSet<>(promotionRepository.findAllByPromotionIdAndStateTrue(requestCategory.getPromotionListId()));
 
-        categoryEntity.setProductCategoryName(requestCategory.getProductCategoryName());
+        categoryEntity.setProductCategoryName(requestCategory.getCategoryName());
         categoryEntity.setPromotionEntities(promotions);
     }
 

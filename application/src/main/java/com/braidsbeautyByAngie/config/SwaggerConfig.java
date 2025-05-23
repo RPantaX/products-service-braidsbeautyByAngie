@@ -10,8 +10,6 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class SwaggerConfig {
-    @Value("${swagger.server.url}")
-    private String serverUrl;
     @Bean
     public OpenAPI customOpenApi(){
         return new OpenAPI()

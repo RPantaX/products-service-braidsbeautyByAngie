@@ -13,7 +13,7 @@ import java.util.List;
 @Builder
 @Getter
 public class RequestCategory {
-    private String productCategoryName;
+    private String categoryName;
     private List <Long> promotionListId;
 
 }

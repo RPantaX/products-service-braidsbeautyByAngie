@@ -19,4 +19,7 @@ public interface VariationRepository extends JpaRepository<VariationEntity, Long
 
     @Query(value = "SELECT v FROM VariationEntity v WHERE v.variationId = :variationId AND v.state = true")
     Optional<VariationEntity> findByVariationIdAndStateTrue(Long variationId);
+
+    @Query("SELECT v FROM VariationEntity v LEFT JOIN FETCH v.variationOptionEntities vo WHERE v.state = true")
+    List<VariationEntity> findAllVariationsWithOptions();
 }

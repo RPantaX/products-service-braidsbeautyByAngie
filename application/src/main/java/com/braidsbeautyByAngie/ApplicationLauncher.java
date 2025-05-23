@@ -16,7 +16,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 @EntityScan("com.braidsbeautyByAngie.*")
 @ImportAutoConfiguration({FeignAutoConfiguration.class})
 @EnableFeignClients("com.braidsbeautyByAngie.*")
-@EnableJpaRepositories("com.braidsbeautyByAngie")
+@EnableJpaRepositories("com.braidsbeautyByAngie.*")
 @OpenAPIDefinition
 @EnableDiscoveryClient
 public class ApplicationLauncher {

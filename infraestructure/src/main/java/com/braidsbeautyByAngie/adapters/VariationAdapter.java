@@ -76,7 +76,7 @@ public class VariationAdapter implements VariationServiceOut {
     @Override
     public List<VariationDTO> listVariationOut() {
         log.info("Fetching all variations");
-        List<VariationEntity> variationEntityList = variationRepository.findAllByStateTrue();
+        List<VariationEntity> variationEntityList = variationRepository.findAllVariationsWithOptions();
         log.info("Total variations fetched: {}", variationEntityList.size());
         return variationEntityList.stream().map(variationMapper::mapVariationEntityToDto).toList();
     }

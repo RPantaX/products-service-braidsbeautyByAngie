@@ -11,8 +11,8 @@ import java.sql.Timestamp;
 @Builder
 public class ProductCategoryDTO {
 
-    private Long productCategoryId;
+    private Long categoryId;
 
-    private String productCategoryName;
+    private String categoryName;
 
 }
