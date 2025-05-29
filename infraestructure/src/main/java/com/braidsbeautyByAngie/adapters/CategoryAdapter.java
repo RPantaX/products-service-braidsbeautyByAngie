@@ -18,8 +18,8 @@ import com.braidsbeautyByAngie.repository.ProductCategoryRepository;
 
 
 import com.braidsbeautyByAngie.repository.PromotionRepository;
-import com.braidsbeautybyangie.sagapatternspringboot.aggregates.AppExceptions.AppException;
-import com.braidsbeautybyangie.sagapatternspringboot.aggregates.AppExceptions.AppExceptionNotFound;
+import com.braidsbeautybyangie.sagapatternspringboot.aggregates.aggregates.util.GlobalErrorEnum;
+import com.braidsbeautybyangie.sagapatternspringboot.aggregates.aggregates.util.ValidateUtil;
 import lombok.RequiredArgsConstructor;
 
 import lombok.extern.slf4j.Slf4j;
@@ -65,6 +65,7 @@ public class CategoryAdapter implements CategoryServiceOut {
 
     /**
      * Creates a subcategory linked to an existing parent category.
+     * Not touch this function
      */
     @Override
     public ProductCategoryDTO createSubCategoryOut(RequestSubCategory requestSubCategory) {
@@ -157,15 +158,22 @@ public class CategoryAdapter implements CategoryServiceOut {
     // ---------- Private Helper Methods ----------
 
     private void validateCategoryName(String categoryName) {
-        if (Boolean.TRUE.equals(productCategoryRepository.existsByProductCategoryName(categoryName))) {
+        boolean categoryExists = productCategoryRepository.existsByProductCategoryName(categoryName);
+        if(!categoryExists){
             log.error("Category name '{}' already exists", categoryName);
-            throw new AppException("The name of the category already exists");
+            ValidateUtil.evaluar(categoryExists, GlobalErrorEnum.CATEGORY_ALREADY_EXISTS_ERC00009);
         }
+
     }
 
     private ProductCategoryEntity fetchCategoryById(Long categoryId) {
-        return productCategoryRepository.findProductCategoryIdAndStateTrue(categoryId)
-                .orElseThrow(() -> new AppExceptionNotFound("Category not found: ID=" + categoryId));
+        ProductCategoryEntity category =  productCategoryRepository.findProductCategoryIdAndStateTrue(categoryId)
+                .orElse(null);
+        if(category == null) {
+            log.error("Category with ID {} not found", categoryId);
+            ValidateUtil.requerido(category, GlobalErrorEnum.CATEGORY_NOT_FOUND_ERC00008);
+        }
+        return category;
     }
 
     private ProductCategoryEntity buildCategoryEntity(RequestCategory requestCategory) {
@@ -178,7 +186,7 @@ public class CategoryAdapter implements CategoryServiceOut {
                 .createdAt(Constants.getTimestamp())
                 .state(Constants.STATUS_ACTIVE)
                 .promotionEntities(promotions)
-                .modifiedByUser("prueba")
+                .modifiedByUser(Constants.getUserInSession())
                 .build();
     }
 
@@ -188,7 +196,7 @@ public class CategoryAdapter implements CategoryServiceOut {
                 .productCategoryName(requestSubCategory.getProductSubCategoryName())
                 .createdAt(Constants.getTimestamp())
                 .state(Constants.STATUS_ACTIVE)
-                .modifiedByUser("prueba")
+                .modifiedByUser(Constants.getUserInSession())
                 .build();
     }
 
@@ -204,7 +212,7 @@ public class CategoryAdapter implements CategoryServiceOut {
     private void deactivateCategory(ProductCategoryEntity categoryEntity) {
         categoryEntity.setState(Constants.STATUS_INACTIVE);
         categoryEntity.setDeletedAt(Constants.getTimestamp());
-        categoryEntity.setModifiedByUser("PRUEBA");
+        categoryEntity.setModifiedByUser(Constants.getUserInSession());
     }
 
     private ResponseCategory buildResponseCategory(ProductCategoryEntity categoryEntity) {

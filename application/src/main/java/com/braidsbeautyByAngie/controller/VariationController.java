@@ -1,6 +1,5 @@
 package com.braidsbeautyByAngie.controller;
 
-import com.braidsbeautyByAngie.aggregates.dto.VariationDTO;
 import com.braidsbeautyByAngie.aggregates.request.RequestVariation;
 import com.braidsbeautyByAngie.ports.in.VariationServiceIn;
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
@@ -8,7 +7,7 @@ import io.swagger.v3.oas.annotations.info.Info;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
+import com.braidsbeautybyangie.sagapatternspringboot.aggregates.aggregates.util.ApiResponse;
 
 @OpenAPIDefinition(
         info = @Info(
@@ -25,28 +24,33 @@ public class VariationController {
     private final VariationServiceIn variationServiceIn;
 
     @GetMapping("/list")
-    public List<VariationDTO> listVariations() {
-        return variationServiceIn.listVariationIn();
+    public ApiResponse listVariations() {
+        return ApiResponse.ok("List of variations retrieved successfully",
+                variationServiceIn.listVariationIn());
     }
 
     @GetMapping(value = "/{variationId}")
-    public VariationDTO getVariationById(@PathVariable(name = "variationId") Long variationId) {
-        return variationServiceIn.findVariationByIdIn(variationId);
+    public ApiResponse getVariationById(@PathVariable(name = "variationId") Long variationId) {
+        return ApiResponse.ok("Variation retrieved successfully",
+                variationServiceIn.findVariationByIdIn(variationId));
     }
 
     @PostMapping()
-    public VariationDTO saveVariation(@RequestBody RequestVariation requestVariation) {
-        return variationServiceIn.createVariationIn(requestVariation);
+    public ApiResponse saveVariation(@RequestBody RequestVariation requestVariation) {
+        return ApiResponse.create("Variation saved successfully",
+                variationServiceIn.createVariationIn(requestVariation));
     }
 
     @PutMapping("/{variationId}")
-    public VariationDTO updateVariation(@PathVariable(name = "variationId") Long variationId, @RequestBody RequestVariation requestVariation) {
-        return variationServiceIn.updateVariationIn(variationId, requestVariation);
+    public ApiResponse updateVariation(@PathVariable(name = "variationId") Long variationId, @RequestBody RequestVariation requestVariation) {
+        return ApiResponse.create("Variation updated successfully",
+                variationServiceIn.updateVariationIn(variationId, requestVariation));
     }
 
     @DeleteMapping("/{variationId}")
-    public VariationDTO deleteVariation(@PathVariable(name = "variationId") Long variationId) {
-        return variationServiceIn.deleteVariationIn(variationId);
+    public ApiResponse deleteVariation(@PathVariable(name = "variationId") Long variationId) {
+        return ApiResponse.ok("Variation deleted successfully",
+                variationServiceIn.deleteVariationIn(variationId));
     }
 
 }

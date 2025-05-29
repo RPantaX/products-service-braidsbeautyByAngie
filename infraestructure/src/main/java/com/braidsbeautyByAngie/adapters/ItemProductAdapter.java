@@ -1,6 +1,7 @@
 package com.braidsbeautyByAngie.adapters;
 
 import com.braidsbeautyByAngie.aggregates.constants.Constants;
+import com.braidsbeautyByAngie.aggregates.constants.ProductsErrorEnum;
 import com.braidsbeautyByAngie.aggregates.dto.ProductItemDTO;
 import com.braidsbeautyByAngie.aggregates.dto.PromotionDTO;
 import com.braidsbeautyByAngie.aggregates.request.RequestItemProduct;
@@ -12,14 +13,12 @@ import com.braidsbeautyByAngie.mapper.*;
 import com.braidsbeautyByAngie.ports.out.ItemProductServiceOut;
 import com.braidsbeautyByAngie.repository.*;
 
-import com.braidsbeautybyangie.sagapatternspringboot.aggregates.AppExceptions.AppException;
-import com.braidsbeautybyangie.sagapatternspringboot.aggregates.AppExceptions.AppExceptionNotFound;
 import com.braidsbeautybyangie.sagapatternspringboot.aggregates.aggregates.dto.Product;
+import com.braidsbeautybyangie.sagapatternspringboot.aggregates.aggregates.util.GlobalErrorEnum;
+import com.braidsbeautybyangie.sagapatternspringboot.aggregates.aggregates.util.ValidateUtil;
 import lombok.RequiredArgsConstructor;
 
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -46,7 +45,7 @@ public class ItemProductAdapter implements ItemProductServiceOut {
     @Override
     public ProductItemDTO createItemProductOut(RequestItemProduct requestItemProduct) {
         log.info("Creating itemProduct id parent: {}", requestItemProduct.getProductId());
-        if (productItemExistsBySKU(requestItemProduct.getProductItemSKU())) throw new AppException("The sku already exists.");
+        if (productItemExistsBySKU(requestItemProduct.getProductItemSKU())) ValidateUtil.evaluar(false, ProductsErrorEnum.ITEM_PRODUCT_ALREADY_EXISTS_ERI00002);
         ProductEntity productEntity = validateAndGetProduct(requestItemProduct.getProductId());
         //varation
         Set<VariationOptionEntity> variationEntitiesSaved = saveVariations(requestItemProduct.getRequestVariations());
@@ -58,7 +57,7 @@ public class ItemProductAdapter implements ItemProductServiceOut {
                 .productItemPrice(requestItemProduct.getProductItemPrice())
                 .productItemQuantityInStock(requestItemProduct.getProductItemQuantityInStock())
                 .createdAt(Constants.getTimestamp())
-                .modifiedByUser("TEST")
+                .modifiedByUser(Constants.getUserInSession())
                 .state(Constants.STATUS_ACTIVE)
                 .build();
 
@@ -73,7 +72,7 @@ public class ItemProductAdapter implements ItemProductServiceOut {
 
         if (results.isEmpty()) {
             log.error("Product Item not found with ID: {}", itemProductId);
-            throw new AppExceptionNotFound("Product Item not found");
+            ValidateUtil.requerido(null, ProductsErrorEnum.ITEM_PRODUCT_NOT_FOUND_ERI00001);
         }
         return buildProductItemDetail(itemProductId, results);
     }
@@ -81,8 +80,7 @@ public class ItemProductAdapter implements ItemProductServiceOut {
     @Override
     public ProductItemDTO updateItemProductOut(Long itemProductId, RequestItemProduct requestItemProduct) {
         log.info("Searching for update product with ID: {}", itemProductId);
-
-        if(!productRepository.existsById(itemProductId)) throw new AppExceptionNotFound("The product doesn't  exists.");
+        ValidateUtil.evaluar(productRepository.existsById(itemProductId), ProductsErrorEnum.ITEM_PRODUCT_NOT_FOUND_ERI00001);
         //varation
         Set<VariationOptionEntity> variationOptionEntities = new HashSet<>();
         if (!requestItemProduct.getRequestVariations().isEmpty()) {
@@ -95,7 +93,7 @@ public class ItemProductAdapter implements ItemProductServiceOut {
                 .productItemPrice(requestItemProduct.getProductItemPrice())
                 .productItemQuantityInStock(requestItemProduct.getProductItemQuantityInStock())
                 .modifiedAt(Constants.getTimestamp())
-                .modifiedByUser("TEST-UPDATED")
+                .modifiedByUser(Constants.getUserInSession())
                 .build();
         ProductItemEntity productItemSaved = productItemRepository.save(productItemEntity1);
         log.info("itemProduct updated with ID: {}", productItemSaved.getProductItemId());
@@ -107,12 +105,14 @@ public class ItemProductAdapter implements ItemProductServiceOut {
     public ProductItemDTO deleteItemProductOut(Long itemProductId) {
         log.info("Searching itemProduct for delete with ID: {}", itemProductId);
 
-        ProductItemEntity productItemEntityOptional = getProductItemById(itemProductId).orElseThrow(
-                ()-> new AppExceptionNotFound("The itemProduct does not exist.")
-        );
+        ProductItemEntity productItemEntityOptional = getProductItemById(itemProductId).orElse(null);
+        if (productItemEntityOptional == null) {
+            log.error("Product Item not found with ID: {}", itemProductId);
+            ValidateUtil.requerido(productItemEntityOptional, ProductsErrorEnum.ITEM_PRODUCT_NOT_FOUND_ERI00001);
+        }
         productItemEntityOptional.setDeletedAt(Constants.getTimestamp());
         productItemEntityOptional.setState(Constants.STATUS_INACTIVE);
-        productItemEntityOptional.setModifiedByUser("TEST");
+        productItemEntityOptional.setModifiedByUser(Constants.getUserInSession());
         productItemEntityOptional.setProductEntity(null);
         ProductItemEntity itemProductDeleted = productItemRepository.save(productItemEntityOptional);
 
@@ -126,7 +126,11 @@ public class ItemProductAdapter implements ItemProductServiceOut {
 
         updateStock(desiredProducts, -1);
         return desiredProducts.stream().map(p-> {
-            ProductItemEntity productItemEntity = productItemRepository.findByProductItemIdAndStateTrue(p.getProductId()).orElseThrow(()-> new AppExceptionNotFound("The product does not exist."));
+            ProductItemEntity productItemEntity = productItemRepository.findByProductItemIdAndStateTrue(p.getProductId()).orElse(null);
+            if(productItemEntity == null) {
+                log.error("Product Item not found with ID: {}", p.getProductId());
+                ValidateUtil.requerido(productItemEntity, ProductsErrorEnum.ITEM_PRODUCT_NOT_FOUND_ERI00001);
+            }
             BigDecimal productPrice = productItemEntity.getProductItemPrice();
 
             if(!productItemEntity.getProductEntity().getProductCategoryEntity().getPromotionEntities().isEmpty()){
@@ -152,14 +156,16 @@ public class ItemProductAdapter implements ItemProductServiceOut {
     @Override
     public List<ResponseProductItemDetail> listItemProductsByIdsOut(List<Long> itemProductIds) {
         if (itemProductIds == null || itemProductIds.isEmpty()) {
-            throw new AppException("The list of Product Item IDs cannot be null or empty");
+            log.error("No Product Item IDs provided for listing.");
+            ValidateUtil.evaluar(false, ProductsErrorEnum.ITEM_PRODUCT_ALREADY_EXISTS_ERI00002);
         }
 
         // Consultar los datos necesarios para todos los IDs proporcionados
         List<Object[]> results = productItemRepository.findProductItemsWithVariations(itemProductIds);
 
         if (results.isEmpty()) {
-            throw new AppExceptionNotFound("No Product Items found for the given IDs");
+            log.error("No Product Items found for the provided IDs: {}", itemProductIds);
+            ValidateUtil.requerido(null, ProductsErrorEnum.ITEM_PRODUCT_NOT_FOUND_ERI00001);
         }
 
         // Agrupar resultados por ProductItemId para construir los DTOs
@@ -181,7 +187,11 @@ public class ItemProductAdapter implements ItemProductServiceOut {
         return productItemRepository.existsById(itemProductId);
     }
     private Optional<ProductItemEntity> getProductItemById(Long itemProductId) {
-        if (!itemProductExistsById(itemProductId)) throw new AppExceptionNotFound("The itemProduct does not exist.");
+        if (!itemProductExistsById(itemProductId)) {
+            log.error("Product Item not found with ID: {}", itemProductId);
+            ValidateUtil.requerido(null, ProductsErrorEnum.ITEM_PRODUCT_NOT_FOUND_ERI00001);
+            return Optional.empty();
+        }
         return productItemRepository.findById(itemProductId);
     }
 
@@ -191,12 +201,12 @@ public class ItemProductAdapter implements ItemProductServiceOut {
     private Set<VariationOptionEntity> saveVariations(List<RequestVariationName> requestVariationNameList) {
         return requestVariationNameList.stream().map(
                 requestVariationName -> {
-                    VariationEntity variationEntity = variationRepository.findByVariationName(requestVariationName.getVariationName()).orElseThrow(
-                            ()-> {
-                                log.error("The variation does not exist.");
-                                return new AppExceptionNotFound("The variation does not exist.");
-                            }
-                    );
+                    VariationEntity variationEntity = variationRepository.findByVariationName(requestVariationName.getVariationName()).orElse(null);
+                    // Check if the variation option already exists
+                    if( variationEntity == null) {
+                        log.error("The variation does not exist.");
+                        ValidateUtil.requerido(variationEntity, ProductsErrorEnum.VARIATION_NOT_FOUND_ERP00029);
+                    }
                     if (variationOptionRepository.existsByVariationOptionValue(requestVariationName.getVariationOptionValue())) {
                         return variationOptionRepository.findByVariationOptionValue(requestVariationName.getVariationOptionValue()).get();
                     }
@@ -205,34 +215,38 @@ public class ItemProductAdapter implements ItemProductServiceOut {
                             .variationOptionValue(requestVariationName.getVariationOptionValue())
                             .state(Constants.STATUS_ACTIVE)
                             .createdAt(Constants.getTimestamp())
-                            .modifiedByUser("TEST")
+                            .modifiedByUser(Constants.getUserInSession())
                             .build();
                     return variationOptionRepository.save(variationOptionEntity);
                 }).collect(Collectors.toSet());
     }
 
     private ProductEntity validateAndGetProduct(Long productId) {
-        return productRepository.findById(productId)
-                .orElseThrow(() -> {
-                    log.error("Product not found with ID: {}", productId);
-                    return new AppExceptionNotFound("Product not found with ID: " + productId);
-                });
+        ProductEntity productEntity = productRepository.findById(productId).orElse(null);
+        if (productEntity == null){
+            log.error("Product not found with ID: {}", productId);
+            ValidateUtil.requerido(productEntity, ProductsErrorEnum.PRODUCT_NOT_FOUND_ERP00001);
+        }
+        return productEntity;
     }
 
+
     private ProductCategoryEntity validateAndGetCategory(Long categoryId) {
-        return productCategoryRepository.findProductCategoryIdAndStateTrue(categoryId)
-                .orElseThrow(() -> {
-                    log.error("Category not found with ID: {}", categoryId);
-                    return new AppExceptionNotFound("Category not found with ID: " + categoryId);
-                });
+        ProductCategoryEntity category = productCategoryRepository.findProductCategoryIdAndStateTrue(categoryId).orElse(null);
+        if (category == null){
+            log.error("Category not found with ID: {}", categoryId);
+            ValidateUtil.requerido(category, GlobalErrorEnum.CATEGORY_NOT_FOUND_ERC00008);
+        }
+        return category;
     }
 
     private ProductItemEntity validateAndGetProductItem(Long itemProductId) {
-        return productItemRepository.findById(itemProductId)
-                .orElseThrow(() -> {
-                    log.error("Product Item not found with ID: {}", itemProductId);
-                    return new AppExceptionNotFound("Product Item not found with ID: " + itemProductId);
-                });
+        ProductItemEntity productItem = productItemRepository.findById(itemProductId).orElse(null);
+        if(productItem == null) {
+            log.error("Product Item not found with ID: {}", itemProductId);
+            ValidateUtil.requerido(productItem, ProductsErrorEnum.ITEM_PRODUCT_NOT_FOUND_ERI00001);
+        }
+        return productItem;
     }
     private List<PromotionDTO> mapPromotionsToDTOs(Set<PromotionEntity> promotionEntities) {
         return promotionEntities.stream()

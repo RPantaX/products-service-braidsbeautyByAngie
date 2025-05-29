@@ -1,5 +1,9 @@
 package com.braidsbeautyByAngie.aggregates.constants;
 
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
+
 import java.sql.Timestamp;
 
 public class Constants {
@@ -24,6 +28,13 @@ public class Constants {
         parameters.append("&orderBy=").append(orderBy);
         parameters.append("&sortDir=").append(sortDir);
         return parameters;
+    }
+
+    public static String getUserInSession() {
+        HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest();
+        String username = request.getHeader("X-Username");
+        String userId = request.getHeader("X-User-Id");
+        return username + " - " + userId;
     }
 
 }

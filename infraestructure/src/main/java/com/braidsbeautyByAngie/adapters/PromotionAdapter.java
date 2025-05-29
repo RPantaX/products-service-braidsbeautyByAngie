@@ -12,8 +12,8 @@ import com.braidsbeautyByAngie.mapper.PromotionMapper;
 import com.braidsbeautyByAngie.ports.out.PromotionServiceOut;
 import com.braidsbeautyByAngie.repository.PromotionRepository;
 
-import com.braidsbeautybyangie.sagapatternspringboot.aggregates.AppExceptions.AppException;
-import com.braidsbeautybyangie.sagapatternspringboot.aggregates.AppExceptions.AppExceptionNotFound;
+import com.braidsbeautybyangie.sagapatternspringboot.aggregates.aggregates.util.GlobalErrorEnum;
+import com.braidsbeautybyangie.sagapatternspringboot.aggregates.aggregates.util.ValidateUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -39,10 +39,7 @@ public class PromotionAdapter implements PromotionServiceOut {
     @Override
     public PromotionDTO createPromotionOut(RequestPromotion requestPromotion) {
         log.info("Attempting to create promotion with name: {}", requestPromotion.getPromotionName());
-
-        if (promotionExistByName(requestPromotion.getPromotionName())) {
-            throw new AppException("The promotion name already exists");
-        }
+        ValidateUtil.evaluar(promotionExistByName(requestPromotion.getPromotionName()), GlobalErrorEnum.PROMOTION_ALREADY_EXISTS_ERPN00023);
 
         PromotionEntity promotionEntity = buildPromotionEntity(requestPromotion);
         PromotionEntity savedPromotion = promotionRepository.save(promotionEntity);
@@ -56,11 +53,8 @@ public class PromotionAdapter implements PromotionServiceOut {
     public Optional<ResponsePromotion> findPromotionByIdOut(Long promotionId) {
         log.info("Searching for promotion with ID: {}", promotionId);
 
-        PromotionEntity promotionEntity = getPromotionEntity(promotionId).orElseThrow(() -> {
-            log.error("Promotion with ID {} not found", promotionId);
-            return new AppExceptionNotFound("Promotion not found");
-        });
-
+        PromotionEntity promotionEntity = getPromotionEntity(promotionId).orElse(null);
+        validateExistsPromotion(promotionEntity, promotionId);
         ResponsePromotion responsePromotion = buildResponsePromotion(promotionEntity);
         log.info("Promotion with ID {} found", promotionId);
 
@@ -71,11 +65,8 @@ public class PromotionAdapter implements PromotionServiceOut {
     public PromotionDTO updatePromotionOut(Long promotionId, RequestPromotion requestPromotion) {
         log.info("Updating promotion with ID: {}", promotionId);
 
-        PromotionEntity promotionEntity = getPromotionEntity(promotionId).orElseThrow(() -> {
-            log.error("Promotion with ID {} not found for update", promotionId);
-            return new AppExceptionNotFound("Promotion not found");
-        });
-
+        PromotionEntity promotionEntity = getPromotionEntity(promotionId).orElse(null);
+        validateExistsPromotion(promotionEntity, promotionId);
         updatePromotionEntity(promotionEntity, requestPromotion);
         PromotionEntity updatedPromotion = promotionRepository.save(promotionEntity);
 
@@ -87,11 +78,8 @@ public class PromotionAdapter implements PromotionServiceOut {
     public PromotionDTO deletePromotionOut(Long promotionId) {
         log.info("Deleting promotion with ID: {}", promotionId);
 
-        PromotionEntity promotionEntity = getPromotionEntity(promotionId).orElseThrow(() -> {
-            log.error("Promotion with ID {} not found for deletion", promotionId);
-            return new AppExceptionNotFound("Promotion not found");
-        });
-
+        PromotionEntity promotionEntity = getPromotionEntity(promotionId).orElse(null);
+        validateExistsPromotion(promotionEntity, promotionId);
         markPromotionAsDeleted(promotionEntity);
         PromotionEntity deletedPromotion = promotionRepository.save(promotionEntity);
 
@@ -138,7 +126,7 @@ public class PromotionAdapter implements PromotionServiceOut {
                 .promotionStartDate(requestPromotion.getPromotionStartDate())
                 .promotionEndDate(requestPromotion.getPromotionEndDate())
                 .createdAt(Constants.getTimestamp())
-                .modifiedByUser("TEST")
+                .modifiedByUser(Constants.getUserInSession())
                 .state(Constants.STATUS_ACTIVE)
                 .build();
     }
@@ -164,13 +152,13 @@ public class PromotionAdapter implements PromotionServiceOut {
         promotionEntity.setPromotionDiscountRate(requestPromotion.getPromotionDiscountRate());
         promotionEntity.setPromotionStartDate(requestPromotion.getPromotionStartDate());
         promotionEntity.setPromotionEndDate(requestPromotion.getPromotionEndDate());
-        promotionEntity.setModifiedByUser("TEST");
+        promotionEntity.setModifiedByUser(Constants.getUserInSession());
         promotionEntity.setModifiedAt(Constants.getTimestamp());
         promotionEntity.setProductCategoryEntities(new HashSet<>());
     }
 
     private void markPromotionAsDeleted(PromotionEntity promotionEntity) {
-        promotionEntity.setModifiedByUser("TEST");
+        promotionEntity.setModifiedByUser(Constants.getUserInSession());
         promotionEntity.setDeletedAt(Constants.getTimestamp());
         promotionEntity.setProductCategoryEntities(new HashSet<>());
         promotionEntity.setState(Constants.STATUS_INACTIVE);
@@ -187,5 +175,11 @@ public class PromotionAdapter implements PromotionServiceOut {
 
     private Optional<PromotionEntity> getPromotionEntity(Long promotionId) {
         return promotionRepository.findPromotionByIdWithStateTrue(promotionId);
+    }
+    private void validateExistsPromotion (PromotionEntity promotionEntity, Long promotionId) {
+        if(promotionEntity == null) {
+            log.error("Promotion with ID {} not found", promotionId);
+            ValidateUtil.requerido(false, GlobalErrorEnum.PROMOTION_NOT_FOUND_ERPN00022);
+        }
     }
 }

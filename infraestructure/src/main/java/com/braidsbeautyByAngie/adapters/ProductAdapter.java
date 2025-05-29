@@ -1,6 +1,7 @@
 package com.braidsbeautyByAngie.adapters;
 
 import com.braidsbeautyByAngie.aggregates.constants.Constants;
+import com.braidsbeautyByAngie.aggregates.constants.ProductsErrorEnum;
 import com.braidsbeautyByAngie.aggregates.dto.*;
 import com.braidsbeautyByAngie.aggregates.request.RequestProduct;
 import com.braidsbeautyByAngie.aggregates.response.categories.ResponseCategoryy;
@@ -10,8 +11,8 @@ import com.braidsbeautyByAngie.mapper.*;
 import com.braidsbeautyByAngie.ports.out.ProductServiceOut;
 import com.braidsbeautyByAngie.repository.*;
 
-import com.braidsbeautybyangie.sagapatternspringboot.aggregates.AppExceptions.AppException;
-import com.braidsbeautybyangie.sagapatternspringboot.aggregates.AppExceptions.AppExceptionNotFound;
+import com.braidsbeautybyangie.sagapatternspringboot.aggregates.aggregates.util.GlobalErrorEnum;
+import com.braidsbeautybyangie.sagapatternspringboot.aggregates.aggregates.util.ValidateUtil;
 import lombok.RequiredArgsConstructor;
 
 import lombok.extern.slf4j.Slf4j;
@@ -42,17 +43,16 @@ public class ProductAdapter implements ProductServiceOut {
     @Override
     public ProductDTO createProductOut(RequestProduct requestProduct) {
         log.info("Creating product with name: {}", requestProduct.getProductName());
-        if(productNameExistsByName(requestProduct.getProductName())) throw new AppException("The product name already exists");
-        ProductCategoryEntity productCategorySaved = productCategoryRepository.findProductCategoryIdAndStateTrue(requestProduct.getProductCategoryId()).orElseThrow(()->
-                new AppExceptionNotFound("Category not found"));
-
+        if(productNameExistsByName(requestProduct.getProductName())) ValidateUtil.evaluar(false, ProductsErrorEnum.PRODUCT_ALREADY_EXISTS_ERP00002);
+        ProductCategoryEntity productCategorySaved = productCategoryRepository.findProductCategoryIdAndStateTrue(requestProduct.getProductCategoryId()).orElse(null);
+        ValidateUtil.evaluar(productCategorySaved != null, GlobalErrorEnum.CATEGORY_NOT_FOUND_ERC00008);
         ProductEntity productEntity = ProductEntity.builder()
                 .productName(requestProduct.getProductName())
                 .productDescription(requestProduct.getProductDescription())
                 .productImage(requestProduct.getProductImage())
                 .productCategoryEntity(productCategorySaved)
                 .state(Constants.STATUS_ACTIVE)
-                .modifiedByUser("TEST")
+                .modifiedByUser(Constants.getUserInSession())
                 .createdAt(Constants.getTimestamp())
                 .build();
 
@@ -67,18 +67,18 @@ public class ProductAdapter implements ProductServiceOut {
     public ResponseProduct findProductByIdOut(Long productId) {
         List<Object[]> results = productRepository.findProductDetailWithCategoryById(productId);
         if (results.isEmpty()) {
-            throw new AppExceptionNotFound("Product not found with ID: " + productId);
+            ValidateUtil.evaluar(false, ProductsErrorEnum.PRODUCT_NOT_FOUND_ERP00001);
         }
 
-        ProductEntity productEntity = productRepository.findProductByProductIdWithStateTrue(productId).orElseThrow(() ->
-                new AppExceptionNotFound("Product not found with ID: " + productId));
-
+        ProductEntity productEntity = productRepository.findProductByProductIdWithStateTrue(productId).orElse(null);
+        ValidateUtil.evaluar(productEntity != null, ProductsErrorEnum.PRODUCT_NOT_FOUND_ERP00001);
+        ValidateUtil.evaluar(productEntity.getProductCategoryEntity() != null, GlobalErrorEnum.CATEGORY_NOT_FOUND_ERC00008);
         ProductCategoryEntity productCategory = productCategoryRepository.findProductCategoryIdAndStateTrue(
                 Optional.ofNullable(productEntity.getProductCategoryEntity())
                         .map(ProductCategoryEntity::getProductCategoryId)
-                        .orElseThrow(() -> new AppExceptionNotFound("Category not found"))
-        ).orElseThrow(() -> new AppExceptionNotFound("Category not found"));
-
+                        .orElse(null)
+        ).orElse(null);
+        ValidateUtil.evaluar(productCategory != null, GlobalErrorEnum.CATEGORY_NOT_FOUND_ERC00008);
         List<PromotionDTO> promotionDTOList = productCategory.getPromotionEntities().stream()
                 .map(promotionMapper::mapPromotionEntityToDto)
                 .collect(Collectors.toList());
@@ -134,15 +134,21 @@ public class ProductAdapter implements ProductServiceOut {
         log.info("Searching for update product with ID: {}", productId);
         ProductEntity productEntitySaved = getProductEntity(productId);
 
-        if(!productEntitySaved.getProductName().equalsIgnoreCase(requestProduct.getProductName()) && productNameExistsByName(requestProduct.getProductName())) {throw new RuntimeException("The product name already exists");}
+        if(!productEntitySaved.getProductName().equalsIgnoreCase(requestProduct.getProductName()) && productNameExistsByName(requestProduct.getProductName())) {
+            log.warn("Attempted to update product to an existing name: {}", requestProduct.getProductName());
+            ValidateUtil.evaluar(false, ProductsErrorEnum.PRODUCT_ALREADY_EXISTS_ERP00002);
+        }
 
         if(requestProduct.getProductCategoryId() !=null && productCategoryRepository.existByProductCategoryIdAndStateTrue(requestProduct.getProductCategoryId())) {
-            ProductCategoryEntity productCategorySaved = productCategoryRepository.findProductCategoryIdAndStateTrue(requestProduct.getProductCategoryId()).orElseThrow(()->
-                    new AppExceptionNotFound("Category not found"));
+            ProductCategoryEntity productCategorySaved = productCategoryRepository.findProductCategoryIdAndStateTrue(requestProduct.getProductCategoryId()).orElse(null);
+            if (productCategorySaved == null) {
+                log.error("Product category not found with ID: {}", requestProduct.getProductCategoryId());
+                ValidateUtil.evaluar(false, GlobalErrorEnum.CATEGORY_NOT_FOUND_ERC00008);
+            }
             productEntitySaved.setProductCategoryEntity(productCategorySaved);
 
         }
-        productEntitySaved.setModifiedByUser("TEST-UPDATED");
+        productEntitySaved.setModifiedByUser(Constants.getUserInSession());
         productEntitySaved.setModifiedAt(Constants.getTimestamp());
         productEntitySaved.setProductName(requestProduct.getProductName());
         productEntitySaved.setProductDescription(requestProduct.getProductDescription());
@@ -159,15 +165,15 @@ public class ProductAdapter implements ProductServiceOut {
         productItemEntities.forEach(productItemEntity -> {
             productItemEntity.setState(Constants.STATUS_INACTIVE);
             productItemEntity.setDeletedAt(Constants.getTimestamp());
-            productItemEntity.setModifiedByUser("TEST-PRODUCT");
+            productItemEntity.setModifiedByUser(Constants.getUserInSession());
         });
         try {
             productItemRepository.saveAll(productItemEntities);
         } catch (Exception e) {
             log.error("Error deleting product items: {}", e.getMessage());
-            throw new AppException("Error deleting product items");
+            ValidateUtil.evaluar(false, ProductsErrorEnum.PRODUCT_DELETION_FAILED_ERP00005);
         }
-        productEntitySaved.setModifiedByUser("TEST");
+        productEntitySaved.setModifiedByUser(Constants.getUserInSession());
         productEntitySaved.setProductCategoryEntity(null);
         productEntitySaved.setDeletedAt(Constants.getTimestamp());
         productEntitySaved.setState(Constants.STATUS_INACTIVE);
@@ -191,15 +197,16 @@ public class ProductAdapter implements ProductServiceOut {
         // Convertir entidades a DTOs
         List<ResponseProduct> responseProductList = productPage.getContent().stream().map(product -> {
 
-            ProductEntity productEntity = productRepository.findProductByProductIdWithStateTrue(product.getProductId()).orElseThrow(()-> {
-                log.error("Product not found with ID: {}", product.getProductId());
-                return new AppExceptionNotFound("Product not found with ID: " + product.getProductId());
-            });
-
-            ProductCategoryEntity productCategory = productCategoryRepository.findProductCategoryIdAndStateTrue(productEntity.getProductCategoryEntity().getProductCategoryId()).orElseThrow(()-> {
-                log.error("Category not found");
-                return new AppExceptionNotFound("Category not found");
-            });
+            ProductEntity productEntity = productRepository.findProductByProductIdWithStateTrue(product.getProductId()).orElse(null);
+            if (productEntity == null) {
+                log.error("Product category is null for product ID: {}", product.getProductId());
+                ValidateUtil.evaluar(false, GlobalErrorEnum.CATEGORY_NOT_FOUND_ERC00008);
+            }
+            ProductCategoryEntity productCategory = productCategoryRepository.findProductCategoryIdAndStateTrue(productEntity.getProductCategoryEntity().getProductCategoryId()).orElse(null);
+            if (productCategory == null) {
+                log.error("Category not found for product ID: {}", product.getProductId());
+                ValidateUtil.evaluar(false, GlobalErrorEnum.CATEGORY_NOT_FOUND_ERC00008);
+            }
             List<PromotionDTO> promotionDTOList = productCategory.getPromotionEntities().stream()
                     .map(promotionMapper::mapPromotionEntityToDto)
                     .collect(Collectors.toList());
@@ -258,10 +265,12 @@ public class ProductAdapter implements ProductServiceOut {
     private boolean productNameExistsByName(String productName){ return productRepository.existsByProductName(productName); }
 
     private ProductEntity getProductEntity(Long productId) {
-        return productRepository.findProductByProductIdWithStateTrue(productId).orElseThrow(() -> {
+        ProductEntity product = productRepository.findProductByProductIdWithStateTrue(productId).orElse(null);
+        if (product == null) {
             log.error("Product not found with ID: {}", productId);
-            return new AppExceptionNotFound("The product does not exist.");
-        });
+            ValidateUtil.evaluar(false, ProductsErrorEnum.PRODUCT_NOT_FOUND_ERP00001);
+        }
+        return product;
     }
 
 }

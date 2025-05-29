@@ -1,10 +1,6 @@
 package com.braidsbeautyByAngie.controller;
 
-import com.braidsbeautyByAngie.aggregates.dto.ProductItemDTO;
 import com.braidsbeautyByAngie.aggregates.request.RequestItemProduct;
-import com.braidsbeautyByAngie.aggregates.request.RequestProductIds;
-import com.braidsbeautyByAngie.aggregates.response.products.ResponseItemProduct;
-import com.braidsbeautyByAngie.aggregates.response.products.ResponseProductItemDetail;
 import com.braidsbeautyByAngie.ports.in.ItemProductServiceIn;
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.info.Info;
@@ -14,7 +10,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
+
+import com.braidsbeautybyangie.sagapatternspringboot.aggregates.aggregates.util.ApiResponse;
+
+
 @OpenAPIDefinition(
         info = @Info(
                 title = "API-ItemProduct",
@@ -30,28 +29,32 @@ public class ItemProductController {
     private final ItemProductServiceIn productServiceIn;
 
     @GetMapping(value = "/{itemProductId}")
-    public ResponseEntity<ResponseProductItemDetail> listItemProductById(@PathVariable(name = "itemProductId") Long itemProductId){
-        return ResponseEntity.ok(productServiceIn.findItemProductByIdIn(itemProductId));
+    public ResponseEntity<ApiResponse> listItemProductById(@PathVariable(name = "itemProductId") Long itemProductId){
+        return ResponseEntity.ok(ApiResponse.ok("Item product retrieved successfully",
+                productServiceIn.findItemProductByIdIn(itemProductId)));
     }
 
     @GetMapping("/list")
-    public ResponseEntity<List<ResponseProductItemDetail>> listItemProductsByIds(@RequestParam List<Long> ids){
-        return ResponseEntity.ok(productServiceIn.listItemProductsByIdsIn(ids));
+    public ResponseEntity<ApiResponse> listItemProductsByIds(@RequestParam List<Long> ids){
+        return ResponseEntity.ok(ApiResponse.ok("List of item products retrieved successfully",
+                productServiceIn.listItemProductsByIdsIn(ids)));
     }
 
     @PostMapping()
-    public ResponseEntity<ProductItemDTO> saveItemProduct(@RequestBody RequestItemProduct requestItemProduct){
-        return new ResponseEntity<>(productServiceIn.createItemProductIn(requestItemProduct), HttpStatus.CREATED);
+    public ResponseEntity<ApiResponse> saveItemProduct(@RequestBody RequestItemProduct requestItemProduct){
+        return new ResponseEntity<>(ApiResponse.create("item saved", productServiceIn.createItemProductIn(requestItemProduct)), HttpStatus.CREATED);
     }
 
     @PutMapping("/{itemProductId}")
-    public ResponseEntity<ProductItemDTO> updateItemProduct(@PathVariable(name = "itemProductId") Long itemProductId, @RequestBody RequestItemProduct requestItemProduct){
-        return ResponseEntity.ok(productServiceIn.updateItemProductIn(itemProductId, requestItemProduct));
+    public ResponseEntity<ApiResponse> updateItemProduct(@PathVariable(name = "itemProductId") Long itemProductId, @RequestBody RequestItemProduct requestItemProduct){
+        return ResponseEntity.ok(ApiResponse.create("Item product updated",
+                productServiceIn.updateItemProductIn(itemProductId, requestItemProduct)));
     }
 
     @DeleteMapping("/{itemProductId}")
-    public ResponseEntity<ProductItemDTO> deleteItemProduct(@PathVariable(name = "itemProductId") Long itemProductId){
-        return ResponseEntity.ok(productServiceIn.deleteItemProductIn(itemProductId));
+    public ResponseEntity<ApiResponse> deleteItemProduct(@PathVariable(name = "itemProductId") Long itemProductId){
+        return ResponseEntity.ok(ApiResponse.ok("Item product deleted",
+                productServiceIn.deleteItemProductIn(itemProductId)));
     }
 
 }

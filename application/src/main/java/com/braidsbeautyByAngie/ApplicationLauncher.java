@@ -12,7 +12,10 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 @SpringBootApplication
-@ComponentScan("com.braidsbeautyByAngie.*")
+@ComponentScan({
+        "com.braidsbeautyByAngie.*",
+        "com.braidsbeautybyangie.sagapatternspringboot.*"  // Incluir el paquete de core-t
+})
 @EntityScan("com.braidsbeautyByAngie.*")
 @ImportAutoConfiguration({FeignAutoConfiguration.class})
 @EnableFeignClients("com.braidsbeautyByAngie.*")
