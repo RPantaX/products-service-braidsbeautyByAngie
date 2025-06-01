@@ -159,7 +159,7 @@ public class CategoryAdapter implements CategoryServiceOut {
 
     private void validateCategoryName(String categoryName) {
         boolean categoryExists = productCategoryRepository.existsByProductCategoryName(categoryName);
-        if(!categoryExists){
+        if(categoryExists){
             log.error("Category name '{}' already exists", categoryName);
             ValidateUtil.evaluar(categoryExists, GlobalErrorEnum.CATEGORY_ALREADY_EXISTS_ERC00009);
         }

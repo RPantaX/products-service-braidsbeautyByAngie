@@ -39,7 +39,7 @@ public class PromotionAdapter implements PromotionServiceOut {
     @Override
     public PromotionDTO createPromotionOut(RequestPromotion requestPromotion) {
         log.info("Attempting to create promotion with name: {}", requestPromotion.getPromotionName());
-        ValidateUtil.evaluar(promotionExistByName(requestPromotion.getPromotionName()), GlobalErrorEnum.PROMOTION_ALREADY_EXISTS_ERPN00023);
+        ValidateUtil.evaluar(!promotionExistByName(requestPromotion.getPromotionName()), GlobalErrorEnum.PROMOTION_ALREADY_EXISTS_ERPN00023);
 
         PromotionEntity promotionEntity = buildPromotionEntity(requestPromotion);
         PromotionEntity savedPromotion = promotionRepository.save(promotionEntity);
