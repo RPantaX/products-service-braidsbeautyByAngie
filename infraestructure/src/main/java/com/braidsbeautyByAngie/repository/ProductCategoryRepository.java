@@ -25,6 +25,6 @@ public interface ProductCategoryRepository extends JpaRepository<ProductCategory
     Page<ProductCategoryEntity> findAllCategoriesPageableAndStatusTrue(Pageable pageable);
 
     @Query("SELECT c FROM ProductCategoryEntity c JOIN c.promotionEntities p WHERE p.promotionId IN :promotionId AND c.state = true")
-    Page<ProductCategoryEntity> findAllByPromotionIdAndStateTrue(List<Long> promotionId);
+    List<ProductCategoryEntity> findAllByPromotionIdAndStateTrue(List<Long> promotionId);
 
 }

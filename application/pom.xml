@@ -7,8 +7,9 @@
         <version>0.0.1-SNAPSHOT</version>
     </parent>
     <artifactId>application</artifactId>
-    <name>Archetype - application</name>
-    <url>http://maven.apache.org</url>
+    <packaging>jar</packaging>
+    <name>Application Module</name>
+    <description>Application layer for products service - Main executable</description>
     <dependencies>
         <dependency>
             <groupId>com.braidsbeautyByAngie</groupId>
@@ -21,4 +22,34 @@
             <version>0.0.1-SNAPSHOT</version>
         </dependency>
     </dependencies>
+    <build>
+        <plugins>
+            <!-- Plugin de compilación -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+            </plugin>
+
+            <!-- JaCoCo para coverage -->
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+            </plugin>
+
+            <!-- SonarQube -->
+            <plugin>
+                <groupId>org.sonarsource.scanner.maven</groupId>
+                <artifactId>sonar-maven-plugin</artifactId>
+            </plugin>
+
+            <!-- IMPORTANTE: Deshabilitar el plugin de Spring Boot para este módulo -->
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <skip>true</skip>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 </project>

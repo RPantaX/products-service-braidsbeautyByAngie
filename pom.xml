@@ -36,6 +36,38 @@
         <java.version>17</java.version>
         <spring-cloud.version>2023.0.3</spring-cloud.version>
         <micrometer.version>1.13.6</micrometer.version>
+
+        <!-- SonarQube Properties -->
+        <sonar.host.url>http://localhost:9000</sonar.host.url>
+        <sonar.token>sqp_ed46747179f700f387d3a810d0c512f84091c94d</sonar.token>
+        <sonar.projectKey>products-service</sonar.projectKey>
+        <sonar.projectName>products-service</sonar.projectName>
+
+        <!-- Coverage Properties -->
+        <jacoco.version>0.8.10</jacoco.version>
+        <sonar.java.coveragePlugin>jacoco</sonar.java.coveragePlugin>
+        <sonar.coverage.jacoco.xmlReportPaths>
+            ${project.basedir}/target/site/jacoco-aggregate/jacoco.xml
+        </sonar.coverage.jacoco.xmlReportPaths>
+
+        <!-- Multi-module specific properties -->
+        <sonar.moduleKey>${project.groupId}:${project.artifactId}</sonar.moduleKey>
+
+        <!-- Source and test directories -->
+        <sonar.sources>src/main/java</sonar.sources>
+        <sonar.tests>src/test/java</sonar.tests>
+
+        <!-- Language and encoding -->
+        <sonar.language>java</sonar.language>
+        <sonar.sourceEncoding>UTF-8</sonar.sourceEncoding>
+        <!-- Coverage exclusions -->
+        <sonar.coverage.exclusions>
+            **/*Application.java,
+            **/*Config.java,
+            **/*Configuration.java,
+            **/entity/**,
+            **/aggregates/**
+        </sonar.coverage.exclusions>
     </properties>
     <dependencies>
         <dependency>
@@ -116,7 +148,6 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
-
     </dependencies>
     <dependencyManagement>
         <dependencies>
@@ -131,6 +162,62 @@
     </dependencyManagement>
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>${jacoco.version}</version>
+                <executions>
+                    <execution>
+                        <id>prepare-agent</id>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>report</id>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                    <!-- Agregado: report agregado para multi-módulo -->
+                    <execution>
+                        <id>merge-unit-and-integration</id>
+                        <phase>post-integration-test</phase>
+                        <goals>
+                            <goal>merge</goal>
+                        </goals>
+                        <configuration>
+                            <fileSets>
+                                <fileSet>
+                                    <directory>${project.basedir}</directory>
+                                    <includes>
+                                        <include>**/target/jacoco.exec</include>
+                                    </includes>
+                                </fileSet>
+                            </fileSets>
+                            <destFile>${project.basedir}/target/jacoco-aggregate.exec</destFile>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>create-merged-report</id>
+                        <phase>post-integration-test</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                        <configuration>
+                            <dataFile>${project.basedir}/target/jacoco-aggregate.exec</dataFile>
+                            <outputDirectory>${project.basedir}/target/site/jacoco-aggregate</outputDirectory>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- SonarQube Maven Plugin -->
+            <plugin>
+                <groupId>org.sonarsource.scanner.maven</groupId>
+                <artifactId>sonar-maven-plugin</artifactId>
+                <version>3.10.0.2594</version>
+            </plugin>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
@@ -148,5 +235,22 @@
             </plugin>
         </plugins>
     </build>
+    <!-- Profile específico para SonarQube -->
 
+    <profiles>
+        <profile>
+            <id>sonar</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <sonar.coverage.jacoco.xmlReportPaths>
+                    ${project.basedir}/target/site/jacoco-aggregate/jacoco.xml,
+                    ${project.basedir}/application/target/site/jacoco/jacoco.xml,
+                    ${project.basedir}/infraestructure/target/site/jacoco/jacoco.xml,
+                    ${project.basedir}/domain/target/site/jacoco/jacoco.xml
+                </sonar.coverage.jacoco.xmlReportPaths>
+            </properties>
+        </profile>
+    </profiles>
 </project>
