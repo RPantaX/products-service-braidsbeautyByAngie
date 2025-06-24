@@ -207,7 +207,7 @@ pipeline {
         }
 
         unstable {
-			echo "⚠️ Pipeline completed with warnings"
+			echo "⚠️ Pipeline completed with warningss"
         }
     }
 }
