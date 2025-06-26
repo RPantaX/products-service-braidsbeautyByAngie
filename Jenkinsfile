@@ -8,7 +8,7 @@ pipeline {
     }
 
     tools {
-		maven 'Maven-3.8.6' // Ajusta según tu versión de Maven configurada
+		maven 'Maven-4.0.0' // Ajusta según tu versión de Maven configurada
         jdk 'Java-17'       // Ajusta según tu JDK configurado
     }
 
