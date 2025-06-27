@@ -6,9 +6,9 @@ pipeline {
         DOCKER_IMAGE_TAG = "${BUILD_NUMBER}-${GIT_COMMIT.take(7)}"
         MAVEN_OPTS = '-Dmaven.repo.local=.m2/repository'
 
-        // GitHub Authentication - Configure these in Jenkins Credentials
-        GITHUB_USERNAME = credentials('RPantaX')
-        GITHUB_TOKEN = credentials('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')
+        // GitHub Authentication - Using your existing Jenkins Credentials
+        GITHUB_TOKEN = credentials('github-token2')  // Para GitHub Packages
+        GITHUB_TOKEN_PRODUCTS = credentials('github-token')  // Para el proyecto
     }
 
     tools {
