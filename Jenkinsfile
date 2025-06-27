@@ -5,6 +5,10 @@ pipeline {
 		DOCKER_HUB_REPO = 'rpantax/products-service'
         DOCKER_IMAGE_TAG = "${BUILD_NUMBER}-${GIT_COMMIT.take(7)}"
         MAVEN_OPTS = '-Dmaven.repo.local=.m2/repository'
+
+        // GitHub Authentication - Configure these in Jenkins Credentials
+        GITHUB_USERNAME = credentials('RPantaX')
+        GITHUB_TOKEN = credentials('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')
     }
 
     tools {
@@ -37,6 +41,21 @@ pipeline {
                     echo "Git Commit: ${GIT_COMMIT}"
                     echo "Git Branch: ${GIT_BRANCH}"
                     echo "Build Number: ${BUILD_NUMBER}"
+                    echo "GitHub Username: ${GITHUB_USERNAME}"
+                '''
+            }
+        }
+
+        stage('Verify GitHub Access') {
+			steps {
+				echo 'Verifying GitHub Packages access...'
+                sh '''
+                    # Test GitHub authentication
+                    curl -u ${GITHUB_USERNAME}:${GITHUB_TOKEN} \
+                         https://maven.pkg.github.com/RPantaX/saga-pattern-spring-boot/com/braidsbeautyByAngie/saga-pattern-spring-boot/maven-metadata.xml \
+                         -I -s | head -1
+
+                    echo "GitHub authentication verified"
                 '''
             }
         }
@@ -45,7 +64,15 @@ pipeline {
 			steps {
 				echo 'Cleaning and compiling the project...'
                 sh '''
-                    mvn clean compile -DskipTests=true
+                    # Clean previous builds
+                    mvn clean
+
+                    # Download dependencies (including from GitHub Packages)
+                    mvn dependency:resolve -U
+
+                    # Compile the project
+                    mvn compile -DskipTests=true
+
                     echo "Compilation completed successfully"
                 '''
             }
@@ -124,7 +151,7 @@ pipeline {
                     # Esperar un momento para que inicie
                     sleep 10
 
-                    # Verificar que el servicio responde (ajusta el endpoint según tu aplicación)
+                    # Verificar que el servicio responde
                     # docker exec products-service-test curl -f http://localhost:8081/actuator/health || exit 1
 
                     # Detener el contenedor de prueba
@@ -207,7 +234,7 @@ pipeline {
         }
 
         unstable {
-			echo "⚠️ Pipeline completed with warningss"
+			echo "⚠️ Pipeline completed with warnings"
         }
     }
 }

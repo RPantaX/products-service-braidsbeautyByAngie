@@ -190,6 +190,19 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
+    <!-- Agregar esto a tu pom.xml después de </dependencyManagement> -->
+    <repositories>
+        <repository>
+            <id>github</id>
+            <url>https://maven.pkg.github.com/RPantaX/saga-pattern-spring-boot</url>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+        </repository>
+    </repositories>
     <build>
         <plugins>
             <plugin>
