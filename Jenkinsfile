@@ -67,7 +67,7 @@ pipeline {
                     # Clean previous builds
                     mvn clean
 
-                    # Download dependencies (including from GitHub Packages)
+                    # Download dependencies (including from GitHub Packages)s
                     mvn dependency:resolve -U
 
                     # Compile the project
