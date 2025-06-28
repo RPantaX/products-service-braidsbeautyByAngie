@@ -13,7 +13,7 @@ pipeline {
 
     tools {
 		maven 'Maven-4.0.0'
-        jdk 'Java-21'  // FIXED: Cambiar a Java-21 que es lo que tienes instalado
+        jdk 'Java-17'  // FIXED: Cambiar a Java-21 que es lo que tienes instalado
     }
 
     stages {
