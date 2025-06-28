@@ -95,7 +95,19 @@ pipeline {
                 '''
             }
         }
+		stage('Clean Maven Cache') {
+					steps {
+						echo 'Cleaning Maven cache...'
+				sh '''
+					echo "=== Cleaning problematic cache ==="
+					rm -rf .m2/repository/io/prometheus/ || echo "Prometheus cache not found"
+					rm -rf /var/jenkins_home/.m2/repository/io/prometheus/ || echo "Global Prometheus cache not found"
 
+					echo "=== Verifying repository order ==="
+					mvn help:effective-pom | grep -A 10 -B 5 "repositories" || echo "No repositories section found"
+				'''
+			}
+		}
         stage('Clean & Compile') {
 			steps {
 				echo 'Cleaning and compiling the project...'
