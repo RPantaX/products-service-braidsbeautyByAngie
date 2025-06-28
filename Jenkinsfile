@@ -103,10 +103,6 @@ pipeline {
                     echo "=== Maven Clean ==="
                     mvn clean -q
 
-                    echo "=== Dependency Resolution with Debug ==="
-                    # Use -X for debug output to see what's happening with authentication
-                    mvn dependency:resolve -U -X | grep -E "(github|auth|401|error)" || true
-
                     echo "=== Compile ==="
                     mvn compile -DskipTests=true -q
 
