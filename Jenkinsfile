@@ -96,26 +96,6 @@ pipeline {
                 '''
             }
         }
-        stage('Pre-Download Dependencies') {
-			steps {
-				echo 'Pre-downloading critical dependencies...'
-        timeout(time: 5, unit: 'MINUTES') {
-					sh '''
-                echo "=== Test Repository Connectivity ==="
-                curl -I -s --max-time 10 https://repo1.maven.org/maven2/ | head -3
-                curl -I -s --max-time 10 https://maven.pkg.github.com/RPantaX/core-service-braidsbeautyByAngie/ | head -3
-
-                echo "=== Download Spring Boot Parent ==="
-                mvn dependency:get -Dartifact=org.springframework.boot:spring-boot-starter-parent:3.3.5:pom
-
-                echo "=== Download Prometheus BOM ==="
-                mvn dependency:get -Dartifact=io.prometheus:prometheus-metrics-bom:1.2.1:pom || echo "Prometheus BOM download failed"
-
-                echo "=== Pre-download completed ==="
-            '''
-        }
-    }
-}
         stage('Clean & Compile') {
 			steps {
 				echo 'Cleaning and compiling the project...'
