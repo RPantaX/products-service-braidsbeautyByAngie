@@ -80,50 +80,60 @@ pipeline {
 				echo 'Debugging Maven settings...'
                 sh '''
                     echo "=== Settings.xml Debug ==="
-                    echo "Checking if settings.xml exists:"
-                    ls -la ~/.m2/settings.xml || echo "settings.xml not found in home"
-                    ls -la /var/jenkins_home/.m2/settings.xml || echo "settings.xml not found in jenkins home"
+                    if [ -f "/root/.m2/settings.xml" ]; then
+                        echo "✅ Settings.xml found"
+                        echo "Content:"
+                        cat /root/.m2/settings.xml
+                    else
+                        echo "❌ Settings.xml not found"
+                    fi
 
-                    echo "Current user:"
-                    whoami
-
-                    echo "Environment variables:"
-                    env | grep GITHUB
-
-                    echo "Maven effective settings:"
-                    mvn help:effective-settings -q | grep -A 10 -B 10 github || echo "No github config found"
+                    echo "=== Repository Connectivity Test ==="
+                    echo "Maven Central:"
+                    curl -I -s --max-time 10 https://repo1.maven.org/maven2/ | head -2
+                    echo "GitHub Packages:"
+                    curl -I -s --max-time 10 -u ${GITHUB_USERNAME}:${GITHUB_TOKEN} https://maven.pkg.github.com/RPantaX/core-service-braidsbeautyByAngie/ | head -2
                 '''
             }
         }
-		stage('Clean Maven Cache') {
-					steps {
-						echo 'Cleaning Maven cache...'
-				sh '''
-					echo "=== Cleaning problematic cache ==="
-					rm -rf .m2/repository/io/prometheus/ || echo "Prometheus cache not found"
-					rm -rf /var/jenkins_home/.m2/repository/io/prometheus/ || echo "Global Prometheus cache not found"
-				'''
-			}
-		}
+        stage('Pre-Download Dependencies') {
+			steps {
+				echo 'Pre-downloading critical dependencies...'
+        timeout(time: 5, unit: 'MINUTES') {
+					sh '''
+                echo "=== Test Repository Connectivity ==="
+                curl -I -s --max-time 10 https://repo1.maven.org/maven2/ | head -3
+                curl -I -s --max-time 10 https://maven.pkg.github.com/RPantaX/core-service-braidsbeautyByAngie/ | head -3
+
+                echo "=== Download Spring Boot Parent ==="
+                mvn dependency:get -Dartifact=org.springframework.boot:spring-boot-starter-parent:3.3.5:pom
+
+                echo "=== Download Prometheus BOM ==="
+                mvn dependency:get -Dartifact=io.prometheus:prometheus-metrics-bom:1.2.1:pom || echo "Prometheus BOM download failed"
+
+                echo "=== Pre-download completed ==="
+            '''
+        }
+    }
+}
         stage('Clean & Compile') {
 			steps {
 				echo 'Cleaning and compiling the project...'
-        sh '''
-            echo "=== Maven Clean ==="
-            mvn clean -q
+                sh '''
+                    echo "=== Maven Clean ==="
+                    mvn clean -q
 
-            echo "=== Test Dependency Resolution ==="
-            # Test solo las dependencias básicas primero
-            mvn dependency:resolve -q -Dmaven.repo.local=/var/jenkins_home/.m2/repository
+                    echo "=== Dependency Resolution with Debug ==="
+                    # Use -X for debug output to see what's happening with authentication
+                    mvn dependency:resolve -U -X | grep -E "(github|auth|401|error)" || true
 
-            echo "=== Compile ==="
-            mvn compile -DskipTests=true -q
+                    echo "=== Compile ==="
+                    mvn compile -DskipTests=true -q
 
-            echo "Compilation completed successfully"
-        '''
-    }
-}
-
+                    echo "Compilation completed successfully"
+                '''
+            }
+        }
         stage('Run Tests') {
 			steps {
 				echo 'Running unit tests...'
