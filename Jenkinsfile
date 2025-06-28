@@ -102,30 +102,27 @@ pipeline {
 					echo "=== Cleaning problematic cache ==="
 					rm -rf .m2/repository/io/prometheus/ || echo "Prometheus cache not found"
 					rm -rf /var/jenkins_home/.m2/repository/io/prometheus/ || echo "Global Prometheus cache not found"
-
-					echo "=== Verifying repository order ==="
-					mvn help:effective-pom | grep -A 10 -B 5 "repositories" || echo "No repositories section found"
 				'''
 			}
 		}
         stage('Clean & Compile') {
 			steps {
 				echo 'Cleaning and compiling the project...'
-                sh '''
-                    echo "=== Maven Clean ==="
-                    mvn clean -q
+        sh '''
+            echo "=== Maven Clean ==="
+            mvn clean -q
 
-                    echo "=== Dependency Resolution with Debug ==="
-                    # Use -X for debug output to see what's happening with authentication
-                    mvn dependency:resolve -U -X | grep -E "(github|auth|401|error)" || true
+            echo "=== Test Dependency Resolution ==="
+            # Test solo las dependencias básicas primero
+            mvn dependency:resolve -q -Dmaven.repo.local=/var/jenkins_home/.m2/repository
 
-                    echo "=== Compile ==="
-                    mvn compile -DskipTests=true -q
+            echo "=== Compile ==="
+            mvn compile -DskipTests=true -q
 
-                    echo "Compilation completed successfully"
-                '''
-            }
-        }
+            echo "Compilation completed successfully"
+        '''
+    }
+}
 
         stage('Run Tests') {
 			steps {
