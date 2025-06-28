@@ -192,15 +192,28 @@
     </dependencyManagement>
     <!-- Agregar esto a tu pom.xml después de </dependencyManagement> -->
     <repositories>
+        <!-- Maven Central PRIMERO (todas las dependencias públicas) -->
         <repository>
-            <id>github</id>
-            <url>https://maven.pkg.github.com/RPantaX/core-service-braidsbeautyByAngie</url>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
+            <id>central</id>
+            <url>https://repo1.maven.org/maven2</url>
             <releases>
                 <enabled>true</enabled>
             </releases>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+
+        <!-- GitHub Packages SEGUNDO (solo para saga-pattern-spring-boot) -->
+        <repository>
+            <id>github</id>
+            <url>https://maven.pkg.github.com/RPantaX/core-service-braidsbeautyByAngie</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
         </repository>
     </repositories>
     <build>
