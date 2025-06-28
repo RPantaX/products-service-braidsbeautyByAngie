@@ -6,14 +6,14 @@ pipeline {
         DOCKER_IMAGE_TAG = "${BUILD_NUMBER}-${GIT_COMMIT.take(7)}"
         MAVEN_OPTS = '-Dmaven.repo.local=.m2/repository'
 
-        // GitHub Authentication - Using your existing Jenkins Credentials
+        // GitHub Authentication - FIXED
+        GITHUB_USERNAME = 'RPantaX'
         GITHUB_TOKEN = credentials('github-token2')  // Para GitHub Packages
-        GITHUB_TOKEN_PRODUCTS = credentials('github-token')  // Para el proyecto
     }
 
     tools {
-		maven 'Maven-4.0.0' // Ajusta según tu versión de Maven configurada
-        jdk 'Java-17'       // Ajusta según tu JDK configurado
+		maven 'Maven-4.0.0'
+        jdk 'Java-21'  // FIXED: Cambiar a Java-21 que es lo que tienes instalado
     }
 
     stages {
@@ -42,6 +42,8 @@ pipeline {
                     echo "Git Branch: ${GIT_BRANCH}"
                     echo "Build Number: ${BUILD_NUMBER}"
                     echo "GitHub Username: ${GITHUB_USERNAME}"
+                    echo "GitHub Token (first 10 chars): ${GITHUB_TOKEN}" | head -c 30
+                    echo "..."
                 '''
             }
         }
@@ -50,12 +52,46 @@ pipeline {
 			steps {
 				echo 'Verifying GitHub Packages access...'
                 sh '''
-                    # Test GitHub authentication
-                    curl -u ${GITHUB_USERNAME}:${GITHUB_TOKEN} \
-                         https://maven.pkg.github.com/RPantaX/saga-pattern-spring-boot/com/braidsbeautyByAngie/saga-pattern-spring-boot/maven-metadata.xml \
-                         -I -s | head -1
+                    echo "Testing GitHub authentication..."
 
-                    echo "GitHub authentication verified"
+                    # Test GitHub authentication with more details
+                    HTTP_STATUS=$(curl -u ${GITHUB_USERNAME}:${GITHUB_TOKEN} \
+                         -s -o /dev/null -w "%{http_code}" \
+                         https://maven.pkg.github.com/RPantaX/core-service-braidsbeautyByAngie/com/braidsbeautyByAngie/saga-pattern-spring-boot/maven-metadata.xml)
+
+                    echo "HTTP Status Code: $HTTP_STATUS"
+
+                    if [ "$HTTP_STATUS" = "200" ]; then
+                        echo "✅ GitHub authentication successful"
+                        echo "Package metadata found:"
+                        curl -u ${GITHUB_USERNAME}:${GITHUB_TOKEN} \
+                             https://maven.pkg.github.com/RPantaX/core-service-braidsbeautyByAngie/com/braidsbeautyByAngie/saga-pattern-spring-boot/maven-metadata.xml \
+                             -s | head -10
+                    else
+                        echo "❌ GitHub authentication failed with status: $HTTP_STATUS"
+                        exit 1
+                    fi
+                '''
+            }
+        }
+
+        stage('Debug Settings.xml') {
+			steps {
+				echo 'Debugging Maven settings...'
+                sh '''
+                    echo "=== Settings.xml Debug ==="
+                    echo "Checking if settings.xml exists:"
+                    ls -la ~/.m2/settings.xml || echo "settings.xml not found in home"
+                    ls -la /var/jenkins_home/.m2/settings.xml || echo "settings.xml not found in jenkins home"
+
+                    echo "Current user:"
+                    whoami
+
+                    echo "Environment variables:"
+                    env | grep GITHUB
+
+                    echo "Maven effective settings:"
+                    mvn help:effective-settings -q | grep -A 10 -B 10 github || echo "No github config found"
                 '''
             }
         }
@@ -64,14 +100,15 @@ pipeline {
 			steps {
 				echo 'Cleaning and compiling the project...'
                 sh '''
-                    # Clean previous builds
-                    mvn clean
+                    echo "=== Maven Clean ==="
+                    mvn clean -q
 
-                    # Download dependencies (including from GitHub Packages)s
-                    mvn dependency:resolve -U
+                    echo "=== Dependency Resolution with Debug ==="
+                    # Use -X for debug output to see what's happening with authentication
+                    mvn dependency:resolve -U -X | grep -E "(github|auth|401|error)" || true
 
-                    # Compile the project
-                    mvn compile -DskipTests=true
+                    echo "=== Compile ==="
+                    mvn compile -DskipTests=true -q
 
                     echo "Compilation completed successfully"
                 '''
@@ -82,16 +119,13 @@ pipeline {
 			steps {
 				echo 'Running unit tests...'
                 sh '''
-                    mvn test jacoco:report
+                    mvn test jacoco:report -q
                     echo "Tests completed"
                 '''
             }
             post {
 				always {
-					// Publicar resultados de tests
-                    publishTestResults testResultsPattern: '**/target/surefire-reports/*.xml'
-
-                    // Publicar reporte de coverage de JaCoCo
+					publishTestResults testResultsPattern: '**/target/surefire-reports/*.xml'
                     publishHTML([
                         allowMissing: false,
                         alwaysLinkToLastBuild: true,
@@ -108,7 +142,7 @@ pipeline {
 			steps {
 				echo 'Packaging the application...'
                 sh '''
-                    mvn package -DskipTests=true
+                    mvn package -DskipTests=true -q
                     echo "Packaging completed"
 
                     # Verificar que el JAR se haya creado
@@ -130,12 +164,9 @@ pipeline {
 					def dockerImage = docker.build("${DOCKER_HUB_REPO}:${DOCKER_IMAGE_TAG}")
                     env.DOCKER_IMAGE_ID = dockerImage.id
 
-                    // También crear tag 'latest' para la rama main
                     if (env.BRANCH_NAME == 'main') {
 						dockerImage.tag('latest')
                     }
-
-                    // Tag con nombre de rama
                     dockerImage.tag("${env.BRANCH_NAME}-latest")
                 }
             }
@@ -145,18 +176,9 @@ pipeline {
 			steps {
 				echo 'Testing Docker image...'
                 sh '''
-                    # Ejecutar contenedor para verificar que inicia correctamente
                     docker run --rm -d --name products-service-test -p 8082:8081 ${DOCKER_HUB_REPO}:${DOCKER_IMAGE_TAG}
-
-                    # Esperar un momento para que inicie
                     sleep 10
-
-                    # Verificar que el servicio responde
-                    # docker exec products-service-test curl -f http://localhost:8081/actuator/health || exit 1
-
-                    # Detener el contenedor de prueba
                     docker stop products-service-test || true
-
                     echo "Docker image test completed successfully"
                 '''
             }
@@ -190,13 +212,9 @@ pipeline {
 			steps {
 				echo 'Cleaning up Docker images...'
                 sh '''
-                    # Limpiar imágenes locales para ahorrar espacio
                     docker rmi ${DOCKER_HUB_REPO}:${DOCKER_IMAGE_TAG} || true
                     docker rmi ${DOCKER_HUB_REPO}:${BRANCH_NAME}-latest || true
-
-                    # Limpiar imágenes sin usar
                     docker image prune -f
-
                     echo "Cleanup completed"
                 '''
             }
@@ -206,8 +224,6 @@ pipeline {
     post {
 		always {
 			echo 'Pipeline execution completed'
-
-            // Limpiar workspace
             cleanWs()
         }
 
@@ -215,7 +231,6 @@ pipeline {
 			echo "✅ Pipeline completed successfully!"
             echo "🐳 Docker image: ${DOCKER_HUB_REPO}:${DOCKER_IMAGE_TAG}"
 
-            // Notificación de éxito (opcional)
             script {
 				if (env.BRANCH_NAME == 'main' || env.BRANCH_NAME == 'develop') {
 					echo "🚀 Image pushed to Docker Hub successfully!"
@@ -225,8 +240,6 @@ pipeline {
 
         failure {
 			echo "❌ Pipeline failed!"
-
-            // Limpiar imágenes en caso de fallo
             sh '''
                 docker rmi ${DOCKER_HUB_REPO}:${DOCKER_IMAGE_TAG} || true
                 docker image prune -f || true
