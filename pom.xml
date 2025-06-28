@@ -204,7 +204,7 @@
             </snapshots>
         </repository>
 
-        <!-- GitHub Packages SEGUNDO (solo para saga-pattern-spring-boot) -->
+        <!-- GitHub Packages SOLO para braidsbeautyByAngie -->
         <repository>
             <id>github</id>
             <url>https://maven.pkg.github.com/RPantaX/core-service-braidsbeautyByAngie</url>
@@ -214,6 +214,10 @@
             <snapshots>
                 <enabled>true</enabled>
             </snapshots>
+            <!-- RESTRINGIR solo a tus dependencias -->
+            <includes>
+                <include>com.braidsbeautyByAngie:*</include>
+            </includes>
         </repository>
     </repositories>
     <build>
