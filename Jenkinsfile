@@ -7,8 +7,8 @@ pipeline {
         MAVEN_OPTS = '-Dmaven.repo.local=.m2/repository'
 
         // GitHub Authentication - FIXED
-        GITHUB_USERNAME = 'github-token'
-        GITHUB_TOKEN = credentials('github-token')  // Para GitHub Packages
+        GITHUB_USERNAME = 'RPantaX'
+        GITHUB_TOKEN = credentials('github-token-2')  // Para GitHub Packages
     }
 
     tools {
