@@ -7,47 +7,15 @@ pipeline {
         MAVEN_OPTS = '-Dmaven.repo.local=.m2/repository'
 
         // GitHub Authentication - FIXED
-        GITHUB_USERNAME = 'RPantaX'
-        GITHUB_TOKEN = credentials('github-token2')  // Para GitHub Packages
+        GITHUB_USERNAME = 'github-token'
+        GITHUB_TOKEN = credentials('github-token')  // Para GitHub Packages
     }
 
     tools {
 		maven 'Maven-4.0.0'
-        jdk 'Java-17'  // FIXED: Cambiar a Java-21 que es lo que tienes instalado
     }
 
     stages {
-		stage('Checkout') {
-			steps {
-				echo "Checking out code from ${env.BRANCH_NAME} branch"
-                checkout scm
-                script {
-					env.GIT_COMMIT = sh(returnStdout: true, script: 'git rev-parse HEAD').trim()
-                    env.GIT_BRANCH = sh(returnStdout: true, script: 'git rev-parse --abbrev-ref HEAD').trim()
-                }
-            }
-        }
-
-        stage('Environment Info') {
-			steps {
-				sh '''
-                    echo "=== Environment Information ==="
-                    echo "Java Version:"
-                    java -version
-                    echo "Maven Version:"
-                    mvn --version
-                    echo "Docker Version:"
-                    docker --version
-                    echo "Git Commit: ${GIT_COMMIT}"
-                    echo "Git Branch: ${GIT_BRANCH}"
-                    echo "Build Number: ${BUILD_NUMBER}"
-                    echo "GitHub Username: ${GITHUB_USERNAME}"
-                    echo "GitHub Token (first 10 chars): ${GITHUB_TOKEN}" | head -c 30
-                    echo "..."
-                '''
-            }
-        }
-
         stage('Verify GitHub Access') {
 			steps {
 				echo 'Verifying GitHub Packages access...'
@@ -74,26 +42,26 @@ pipeline {
                 '''
             }
         }
-
-        stage('Debug Settings.xml') {
+        stage('Clone Repo') {
 			steps {
-				echo 'Debugging Maven settings...'
-                sh '''
-                    echo "=== Settings.xml Debug ==="
-                    if [ -f "/root/.m2/settings.xml" ]; then
-                        echo "✅ Settings.xml found"
-                        echo "Content:"
-                        cat /root/.m2/settings.xml
-                    else
-                        echo "❌ Settings.xml not found"
-                    fi
-
-                    echo "=== Repository Connectivity Test ==="
-                    echo "Maven Central:"
-                    curl -I -s --max-time 10 https://repo1.maven.org/maven2/ | head -2
-                    echo "GitHub Packages:"
-                    curl -I -s --max-time 10 -u ${GITHUB_USERNAME}:${GITHUB_TOKEN} https://maven.pkg.github.com/RPantaX/core-service-braidsbeautyByAngie/ | head -2
-                '''
+				echo "Checking out code from ${env.CURRENT_BRANCH} branch"
+                checkout([
+                    $class: 'GitSCM',
+                    branches: [[name: '*/main']],
+                    userRemoteConfigs: [[
+                        url: 'https://github.com/RPantaX/products-service-braidsbeautyByAngie.git',
+                        credentialsId: 'github-token'
+                    ]]
+                ])
+                script {
+					// Obtener información del commit y rama actual
+                    env.GIT_COMMIT = sh(returnStdout: true, script: 'git rev-parse HEAD').trim()
+                    env.CURRENT_BRANCH = sh(returnStdout: true, script: 'git rev-parse --abbrev-ref HEAD').trim()
+                    env.DOCKER_IMAGE_TAG = "${BUILD_NUMBER}-${env.GIT_COMMIT.take(7)}"
+                    echo "Building from branch: ${env.CURRENT_BRANCH}"
+                    echo "Git commit: ${env.GIT_COMMIT}"
+                    echo "Docker tag: ${env.DOCKER_IMAGE_TAG}"
+                }
             }
         }
         stage('Clean & Compile') {
@@ -101,12 +69,7 @@ pipeline {
 				echo 'Cleaning and compiling the project...'
                 sh '''
                     echo "=== Maven Clean ==="
-                    mvn clean -q
-
-                    echo "=== Compile ==="
-                    mvn compile -DskipTests=true -q
-
-                    echo "Compilation completed successfully"
+                    mvn clean package -DskipTests
                 '''
             }
         }
@@ -189,7 +152,7 @@ pipeline {
             steps {
 				echo 'Pushing Docker image to Docker Hub...'
                 script {
-					docker.withRegistry('https://index.docker.io/v1/', 'dockerhub-credentials') {
+					docker.withRegistry('https://index.docker.io/v1/', 'jenkins-cicd-token2') {
 						def image = docker.image("${DOCKER_HUB_REPO}:${DOCKER_IMAGE_TAG}")
                         image.push()
                         image.push("${env.BRANCH_NAME}-latest")
