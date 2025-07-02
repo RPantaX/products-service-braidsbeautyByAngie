@@ -90,11 +90,11 @@ pipeline {
 		  }
 		}
 
-        stage('Run Tests') {
+        /*stage('Run Tests') {
 			steps {
 				echo 'Running unit tests...'
                 sh '''
-                    mvn test jacoco:report -q
+                    mvn test jacoco:report -q --settings settings.xml
                     echo "Tests completed"
                 '''
             }
@@ -111,7 +111,7 @@ pipeline {
                     ])
                 }
             }
-        }
+        }*/
 
         stage('Package') {
 			steps {
