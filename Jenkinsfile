@@ -89,81 +89,9 @@ EOF
                         echo -e "\nJava version:"
                         java -version
 
-                        echo -e "\n=== LIMPIEZA INICIAL ==="
-                        mvn clean --settings settings.xml
+                        echo -e "\n=== COMPILACIÓN ==="
+                        mvn clean package -DskipTests --settings settings.xml
 
-                        echo -e "\n=== COMPILACIÓN CON LOGS DETALLADOS ==="
-                        mvn package -DskipTests --settings settings.xml -e -X | tail -100
-
-                        echo -e "\n=== VERIFICACIÓN POST-COMPILACIÓN ==="
-
-                        echo "1. 📁 DIRECTORIOS TARGET GENERADOS:"
-                        find . -name "target" -type d | head -10
-
-                        echo -e "\n2. 📄 ARCHIVOS JAR GENERADOS:"
-                        find . -name "*.jar" -type f | grep -v ".m2" | head -20
-
-                        echo -e "\n3. 📋 ANÁLISIS DETALLADO POR MÓDULO:"
-                        for module in application domain infraestructure; do
-                            echo "--- $module ---"
-                            if [ -d "${module}/target" ]; then
-                                echo "✅ Target directory existe"
-                                echo "Contenido completo:"
-                                ls -la ${module}/target/ | head -20
-
-                                echo -e "\nArchivos JAR específicos:"
-                                find ${module}/target -name "*.jar" -type f | head -10
-
-                                if [ "$module" = "application" ]; then
-                                    echo -e "\n🔍 ANÁLISIS ESPECÍFICO DEL MÓDULO APPLICATION:"
-
-                                    # Verificar JAR ejecutable esperado
-                                    TARGET_JAR="${module}/target/application-0.0.1-SNAPSHOT.jar"
-                                    if [ -f "$TARGET_JAR" ]; then
-                                        echo "✅ JAR ejecutable encontrado: $TARGET_JAR"
-                                        echo "   Tamaño: $(du -h $TARGET_JAR | cut -f1)"
-                                        echo "   Fecha: $(stat -c %y $TARGET_JAR 2>/dev/null || stat -f %Sm $TARGET_JAR 2>/dev/null)"
-
-                                        # Verificar que es un JAR de Spring Boot
-                                        if unzip -l "$TARGET_JAR" | grep -q "BOOT-INF"; then
-                                            echo "   ✅ Es un JAR ejecutable de Spring Boot"
-                                        else
-                                            echo "   ❌ NO es un JAR ejecutable de Spring Boot"
-                                            echo "   Contenido del JAR (primeras 20 líneas):"
-                                            unzip -l "$TARGET_JAR" | head -20
-                                        fi
-                                    else
-                                        echo "❌ JAR ejecutable NO encontrado: $TARGET_JAR"
-                                        echo "   Buscando JARs alternativos:"
-                                        find ${module}/target -name "*.jar" -type f | head -10
-
-                                        # Verificar logs de Maven específicos del módulo
-                                        echo -e "\n   📋 INTENTANDO COMPILAR SOLO EL MÓDULO APPLICATION:"
-                                        cd ${module}
-                                        mvn package -DskipTests --settings ../settings.xml -e | tail -20
-                                        cd ..
-                                    fi
-                                fi
-                            else
-                                echo "❌ Target directory NO existe"
-                            fi
-                            echo ""
-                        done
-
-                        echo "4. 🔍 BÚSQUEDA GLOBAL DE JARS:"
-                        echo "Todos los JARs en el proyecto:"
-                        find . -name "*.jar" -type f | grep -v ".m2" | grep -v test
-
-                        echo -e "\n5. 🔍 VERIFICACIÓN DE LOGS DE MAVEN:"
-                        echo "Últimas líneas del log de Maven:"
-                        # Los logs ya se mostraron arriba con tail -100
-
-                        echo -e "\n=== INSTALACIÓN DE DEPENDENCIAS ==="
-                        mvn install --settings settings.xml -DskipTests
-
-                        echo -e "\n=== VERIFICACIÓN FINAL ==="
-                        echo "Estado final de archivos JAR:"
-                        find . -name "*.jar" -type f | grep -v ".m2" | xargs ls -la 2>/dev/null || echo "No se encontraron JARs"
                     '''
                 }
             }
