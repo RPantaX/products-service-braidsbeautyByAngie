@@ -67,12 +67,29 @@ pipeline {
         stage('Clean & Compile') {
 			steps {
 				echo 'Cleaning and compiling the project...'
-                sh '''
-                    echo "=== Maven Clean ==="
-                    mvn clean package -DskipTests
-                '''
-            }
-        }
+    		withCredentials([string(credentialsId: 'github-token-2', variable: 'GITHUB_TOKEN')]) {
+					sh '''
+				echo "=== Generating Maven settings.xml ==="
+
+				cat > settings.xml <<EOF
+				<settings>
+				  <servers>
+					<server>
+					  <id>github</id>
+					  <username>RPantaX</username>
+					  <password>${GITHUB_TOKEN}</password>
+					</server>
+				  </servers>
+				</settings>
+				EOF
+
+				echo "=== Maven Clean ==="
+				mvn clean package -DskipTests --settings settings.xml
+			  '''
+			}
+		  }
+		}
+
         stage('Run Tests') {
 			steps {
 				echo 'Running unit tests...'
