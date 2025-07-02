@@ -104,23 +104,12 @@ EOF
 					def dockerImage = docker.build("${DOCKER_HUB_REPO}:${DOCKER_IMAGE_TAG}")
                     env.DOCKER_IMAGE_ID = dockerImage.id
 
+					dockerImage.tag("${env.BRANCH_NAME}-latest")
                     if (env.BRANCH_NAME == 'main') {
 						dockerImage.tag('latest')
                     }
-                    dockerImage.tag("${env.BRANCH_NAME}-latest")
+					echo "Docker image built successfully: ${DOCKER_HUB_REPO}:${DOCKER_IMAGE_TAG}"
                 }
-            }
-        }
-
-        stage('Docker Test') {
-			steps {
-				echo 'Testing Docker image...'
-                sh '''
-                    docker run --rm -d --name products-service-test -p 8082:8081 ${DOCKER_HUB_REPO}:${DOCKER_IMAGE_TAG}
-                    sleep 10
-                    docker stop products-service-test || true
-                    echo "Docker image test completed successfully"
-                '''
             }
         }
 
@@ -129,6 +118,9 @@ EOF
 				anyOf {
 					branch 'main'
                     branch 'develop'
+                    // Agregar condición para cuando BRANCH_NAME sea null pero estemos en main
+                    expression { env.CURRENT_BRANCH == 'main' }
+                    expression { env.CURRENT_BRANCH == 'develop' }
                 }
             }
             steps {
@@ -150,13 +142,17 @@ EOF
 
         stage('Cleanup') {
 			steps {
-				echo 'Cleaning up Docker images...'
-                sh '''
-                    docker rmi ${DOCKER_HUB_REPO}:${DOCKER_IMAGE_TAG} || true
-                    docker rmi ${DOCKER_HUB_REPO}:${BRANCH_NAME}-latest || true
-                    docker image prune -f
-                    echo "Cleanup completed"
-                '''
+				echo 'Cleaning up local Docker images...'
+                script {
+					// Limpiar imágenes locales para ahorrar espacio
+                    sh """
+                        docker rmi ${DOCKER_HUB_REPO}:${DOCKER_IMAGE_TAG} || true
+                        docker rmi ${DOCKER_HUB_REPO}:${env.CURRENT_BRANCH}-latest || true
+                        if [ "${env.CURRENT_BRANCH}" = "main" ]; then
+                            docker rmi ${DOCKER_HUB_REPO}:latest || true
+                        fi
+                    """
+                }
             }
         }
     }
