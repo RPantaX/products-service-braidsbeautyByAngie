@@ -89,24 +89,6 @@ pipeline {
 			}
 		  }
 		}
-        stage('Package') {
-			steps {
-				echo 'Packaging the application...'
-                sh '''
-                    mvn package -DskipTests=true --settings settings.xml
-                    echo "Packaging completed"
-
-                    # Verificar que el JAR se haya creado
-                    if [ -f "application/target/application-0.0.1-SNAPSHOT.jar" ]; then
-                        echo "✓ JAR file created successfully"
-                        ls -la application/target/application-0.0.1-SNAPSHOT.jar
-                    else
-                        echo "✗ JAR file not found!"
-                        exit 1
-                    fi
-                '''
-            }
-        }
 
         stage('Docker Build') {
 			steps {
