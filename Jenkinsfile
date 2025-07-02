@@ -93,7 +93,7 @@ pipeline {
 			steps {
 				echo 'Packaging the application...'
                 sh '''
-                    mvn package -DskipTests=true -q
+                    mvn package -DskipTests=true --settings settings.xml
                     echo "Packaging completed"
 
                     # Verificar que el JAR se haya creado
