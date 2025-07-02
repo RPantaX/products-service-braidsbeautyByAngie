@@ -5,7 +5,7 @@ pipeline {
 		DOCKER_HUB_REPO = 'rpantax/products-service'
         DOCKER_IMAGE_TAG = "${BUILD_NUMBER}-${GIT_COMMIT.take(7)}"
         MAVEN_OPTS = '-Dmaven.repo.local=.m2/repository'
-
+		CURRENT_BRANCH = "${env.BRANCH_NAME ?: 'main'}"
         // GitHub Authentication - FIXED
         GITHUB_USERNAME = 'RPantaX'
         GITHUB_TOKEN = credentials('github-token-2')  // Para GitHub Packages
