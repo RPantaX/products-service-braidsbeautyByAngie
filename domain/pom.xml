@@ -31,14 +31,16 @@
                 <artifactId>sonar-maven-plugin</artifactId>
             </plugin>
 
-            <!-- IMPORTANTE: Deshabilitar el plugin de Spring Boot para este módulo -->
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-                <configuration>
-                    <skip>true</skip>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
+            <!-- IMPORTANTE: Deshabilitar el plugin de Spring Boot para este módulo PARA JENKINS-->
+            <!--
+           <plugin>
+               <groupId>org.springframework.boot</groupId>
+               <artifactId>spring-boot-maven-plugin</artifactId>
+               <configuration>
+                   <skip>true</skip>
+               </configuration>
+           </plugin>
+           -->
+       </plugins>
+   </build>
 </project>
