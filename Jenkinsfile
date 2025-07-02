@@ -85,6 +85,7 @@ pipeline {
 
 				echo "=== Maven Clean ==="
 				mvn clean package -DskipTests --settings settings.xml
+				mvn install --settings settings.xml
 			  '''
 			}
 		  }
