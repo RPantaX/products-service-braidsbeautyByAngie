@@ -89,30 +89,6 @@ pipeline {
 			}
 		  }
 		}
-
-        /*stage('Run Tests') {
-			steps {
-				echo 'Running unit tests...'
-                sh '''
-                    mvn test jacoco:report -q --settings settings.xml
-                    echo "Tests completed"
-                '''
-            }
-            post {
-				always {
-					publishTestResults testResultsPattern: '**/target/surefire-reports/*.xml'
-                    publishHTML([
-                        allowMissing: false,
-                        alwaysLinkToLastBuild: true,
-                        keepAll: true,
-                        reportDir: 'target/site/jacoco',
-                        reportFiles: 'index.html',
-                        reportName: 'JaCoCo Coverage Report'
-                    ])
-                }
-            }
-        }*/
-
         stage('Package') {
 			steps {
 				echo 'Packaging the application...'
