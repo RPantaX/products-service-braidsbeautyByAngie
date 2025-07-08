@@ -25,4 +25,5 @@ public interface CategoryServiceIn {
 
     ResponseListPageableCategory listCategoryPageableIn(int pageNumber, int pageSize, String orderBy, String sortDir);
     List<ProductCategoryDTO> listCategoryIn();
+    ProductCategoryDTO findCategoryByNameIn(String categoryName);
 }

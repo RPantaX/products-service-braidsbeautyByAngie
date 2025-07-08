@@ -55,4 +55,9 @@ public class CategoryServiceImpl implements CategoryServiceIn {
     public List<ProductCategoryDTO> listCategoryIn() {
         return categoryServiceOut.listCategoryOut();
     }
+
+    @Override
+    public ProductCategoryDTO findCategoryByNameIn(String categoryName) {
+        return categoryServiceOut.findCategoryByNameOut(categoryName);
+    }
 }

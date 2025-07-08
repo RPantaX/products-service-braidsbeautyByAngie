@@ -47,4 +47,9 @@ public class PromotionServiceImpl implements PromotionServiceIn {
     public List<PromotionDTO> listPromotionIn() {
         return promotionServiceOut.listPromotionOut();
     }
+
+    @Override
+    public Optional<PromotionDTO> findPromotionByNameIn(String promotionName) {
+        return promotionServiceOut.findPromotionByNameOut(promotionName);
+    }
 }

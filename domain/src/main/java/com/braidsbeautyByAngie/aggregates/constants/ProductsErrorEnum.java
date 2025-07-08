@@ -7,7 +7,7 @@ public enum ProductsErrorEnum implements GenericError {
     // General Errors
     //PRODUCTS
     PRODUCT_NOT_FOUND_ERP00001("ERP00001", "Product Not Found", "The requested product does not exist.", TypeException.E),
-    PRODUCT_ALREADY_EXISTS_ERP00002("ERP00002", "Product Already Exists", "A product with the same identifier already exists.", TypeException.E),
+    PRODUCT_ALREADY_EXISTS_ERP00002("ERP00002", "Product Already Exists", "A product with the same name already exists.", TypeException.E),
     PRODUCT_CREATION_FAILED_ERP00003("ERP00003", "Product Creation Failed", "Failed to create the product due to an internal error.", TypeException.E),
     PRODUCT_UPDATE_FAILED_ERP00004("ERP00004", "Product Update Failed", "Failed to update the product due to an internal error.", TypeException.E),
     PRODUCT_DELETION_FAILED_ERP00005("ERP00005", "Product Deletion Failed", "Failed to delete the product due to an internal error.", TypeException.E),

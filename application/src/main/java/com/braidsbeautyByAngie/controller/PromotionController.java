@@ -48,6 +48,11 @@ public class PromotionController {
         return ResponseEntity.ok(ApiResponse.ok("List of promotions retrieved successfully",
                 promotionService.listPromotionIn()));
     }
+    @GetMapping(value = "/findByName/{promotionName}")
+    public ResponseEntity<ApiResponse> findPromotionByName(@PathVariable(name = "promotionName") String promotionName){
+        return ResponseEntity.ok(ApiResponse.ok("Promotion retrieved by name",
+                promotionService.findPromotionByNameIn(promotionName)));
+    }
 
     @Operation(summary = "Save promotion")
     @PostMapping()

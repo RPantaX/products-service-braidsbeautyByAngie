@@ -24,4 +24,5 @@ public interface CategoryServiceOut {
 
     ResponseListPageableCategory listCategoryPageableOut(int pageNumber, int pageSize, String orderBy, String sortDir);
     List<ProductCategoryDTO> listCategoryOut();
+    ProductCategoryDTO findCategoryByNameOut(String categoryName);
 }

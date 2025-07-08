@@ -19,4 +19,5 @@ public interface PromotionServiceOut {
 
     ResponseListPageablePromotion listPromotionByPageOut(int pageNumber, int pageSize, String orderBy, String sortDir);
     List<PromotionDTO> listPromotionOut();
+    Optional<PromotionDTO> findPromotionByNameOut(String promotionName);
 }

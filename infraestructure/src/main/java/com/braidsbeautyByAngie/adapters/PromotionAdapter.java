@@ -38,13 +38,13 @@ public class PromotionAdapter implements PromotionServiceOut {
 
     @Override
     public PromotionDTO createPromotionOut(RequestPromotion requestPromotion) {
-        log.info("Attempting to create promotion with name: {}", requestPromotion.getPromotionName());
+        log.info("Attempting to create promotion with name: {}", requestPromotion.getPromotionName().toUpperCase());
         ValidateUtil.evaluar(!promotionExistByName(requestPromotion.getPromotionName()), GlobalErrorEnum.PROMOTION_ALREADY_EXISTS_ERPN00023);
 
         PromotionEntity promotionEntity = buildPromotionEntity(requestPromotion);
         PromotionEntity savedPromotion = promotionRepository.save(promotionEntity);
 
-        log.info("Promotion '{}' created successfully with ID: {}", savedPromotion.getPromotionName(), savedPromotion.getPromotionId());
+        log.info("Promotion '{}' created successfully with ID: {}", savedPromotion.getPromotionName().toUpperCase(), savedPromotion.getPromotionId());
         return promotionMapper.mapPromotionEntityToDto(savedPromotion);
     }
 
@@ -67,6 +67,7 @@ public class PromotionAdapter implements PromotionServiceOut {
 
         PromotionEntity promotionEntity = getPromotionEntity(promotionId).orElse(null);
         validateExistsPromotion(promotionEntity, promotionId);
+        ValidateUtil.evaluar(!promotionExistByName(requestPromotion.getPromotionName()), GlobalErrorEnum.PROMOTION_ALREADY_EXISTS_ERPN00023);
         updatePromotionEntity(promotionEntity, requestPromotion);
         PromotionEntity updatedPromotion = promotionRepository.save(promotionEntity);
 
@@ -117,10 +118,22 @@ public class PromotionAdapter implements PromotionServiceOut {
         return promotionEntities.stream().map(promotionMapper::mapPromotionEntityToDto).toList();
     }
 
+    @Override
+    public Optional<PromotionDTO> findPromotionByNameOut(String promotionName) {
+        String promotionNameUpperCase = promotionName.toUpperCase();
+        log.info("Searching for promotion with name: {}", promotionNameUpperCase);
+        PromotionEntity promotionEntity = promotionRepository.findByPromotionNameAndStateTrue(promotionNameUpperCase).orElse(null);
+        if(promotionEntity == null) {
+            log.error("Promotion with NAME {} not found", promotionNameUpperCase);
+            ValidateUtil.requerido(null, GlobalErrorEnum.PROMOTION_NOT_FOUND_ERPN00022);
+        }
+        return Optional.of(promotionMapper.mapPromotionEntityToDto(promotionEntity));
+    }
+
     // Helper methods for better organization and code readability
     private PromotionEntity buildPromotionEntity(RequestPromotion requestPromotion) {
         return PromotionEntity.builder()
-                .promotionName(requestPromotion.getPromotionName())
+                .promotionName(requestPromotion.getPromotionName().toUpperCase())
                 .promotionDescription(requestPromotion.getPromotionDescription())
                 .promotionDiscountRate(requestPromotion.getPromotionDiscountRate())
                 .promotionStartDate(requestPromotion.getPromotionStartDate())
@@ -147,7 +160,7 @@ public class PromotionAdapter implements PromotionServiceOut {
     }
 
     private void updatePromotionEntity(PromotionEntity promotionEntity, RequestPromotion requestPromotion) {
-        promotionEntity.setPromotionName(requestPromotion.getPromotionName());
+        promotionEntity.setPromotionName(requestPromotion.getPromotionName().toUpperCase());
         promotionEntity.setPromotionDescription(requestPromotion.getPromotionDescription());
         promotionEntity.setPromotionDiscountRate(requestPromotion.getPromotionDiscountRate());
         promotionEntity.setPromotionStartDate(requestPromotion.getPromotionStartDate());
@@ -170,7 +183,7 @@ public class PromotionAdapter implements PromotionServiceOut {
     }
 
     private boolean promotionExistByName(String promotionName) {
-        return promotionRepository.existsByPromotionName(promotionName);
+        return promotionRepository.existsByPromotionName(promotionName.toUpperCase());
     }
 
     private Optional<PromotionEntity> getPromotionEntity(Long promotionId) {
@@ -179,7 +192,7 @@ public class PromotionAdapter implements PromotionServiceOut {
     private void validateExistsPromotion (PromotionEntity promotionEntity, Long promotionId) {
         if(promotionEntity == null) {
             log.error("Promotion with ID {} not found", promotionId);
-            ValidateUtil.requerido(false, GlobalErrorEnum.PROMOTION_NOT_FOUND_ERPN00022);
+            ValidateUtil.requerido(null, GlobalErrorEnum.PROMOTION_NOT_FOUND_ERPN00022);
         }
     }
 }

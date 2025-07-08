@@ -53,8 +53,8 @@ public class CategoryAdapter implements CategoryServiceOut {
     @Override
     @Transactional
     public ProductCategoryDTO createCategoryOut(RequestCategory requestCategory) {
-        log.info("Attempting to create category: {}", requestCategory.getCategoryName());
-        validateCategoryName(requestCategory.getCategoryName());
+        log.info("Attempting to create category: {}", requestCategory.getCategoryName().toUpperCase());
+        validateCategoryName(requestCategory.getCategoryName().toUpperCase());
 
         ProductCategoryEntity categoryEntity = buildCategoryEntity(requestCategory);
         ProductCategoryEntity savedCategory = productCategoryRepository.save(categoryEntity);
@@ -106,7 +106,7 @@ public class CategoryAdapter implements CategoryServiceOut {
         updateCategoryEntity(existingCategory, requestCategory);
         ProductCategoryEntity updatedCategory = productCategoryRepository.save(existingCategory);
 
-        log.info("Category updated successfully: ID={}, Name={}", updatedCategory.getProductCategoryId(), updatedCategory.getProductCategoryName());
+        log.info("Category updated successfully: ID={}, Name={}", updatedCategory.getProductCategoryId(), updatedCategory.getProductCategoryName().toUpperCase());
         return productCategoryMapper.mapCategoryEntityToDTO(updatedCategory);
     }
 
@@ -155,13 +155,26 @@ public class CategoryAdapter implements CategoryServiceOut {
                 .toList();
     }
 
+    @Override
+    public ProductCategoryDTO findCategoryByNameOut(String categoryName) {
+        String categoryNameUpperCase = categoryName.toUpperCase();
+        log.info("Searching for category with name: {}", categoryNameUpperCase);
+        Optional<ProductCategoryDTO> categoryDTO = productCategoryRepository.findByProductCategoryNameAndStateTrue(categoryNameUpperCase)
+                .map(productCategoryMapper::mapCategoryEntityToDTO);
+        if(categoryDTO.isEmpty()) {
+            log.error("Category with name '{}' not found", categoryNameUpperCase);
+            ValidateUtil.requerido(null, GlobalErrorEnum.CATEGORY_NOT_FOUND_ERC00008);
+        }
+        return categoryDTO.get();
+    }
+
     // ---------- Private Helper Methods ----------
 
     private void validateCategoryName(String categoryName) {
         boolean categoryExists = productCategoryRepository.existsByProductCategoryName(categoryName);
         if(categoryExists){
             log.error("Category name '{}' already exists", categoryName);
-            ValidateUtil.evaluar(categoryExists, GlobalErrorEnum.CATEGORY_ALREADY_EXISTS_ERC00009);
+            ValidateUtil.evaluar(!categoryExists, GlobalErrorEnum.CATEGORY_ALREADY_EXISTS_ERC00009);
         }
 
     }
@@ -182,7 +195,7 @@ public class CategoryAdapter implements CategoryServiceOut {
                 : new HashSet<>(promotionRepository.findAllByPromotionIdAndStateTrue(requestCategory.getPromotionListId()));
 
         return ProductCategoryEntity.builder()
-                .productCategoryName(requestCategory.getCategoryName())
+                .productCategoryName(requestCategory.getCategoryName().toUpperCase())
                 .createdAt(Constants.getTimestamp())
                 .state(Constants.STATUS_ACTIVE)
                 .promotionEntities(promotions)
@@ -205,7 +218,7 @@ public class CategoryAdapter implements CategoryServiceOut {
                 ? new HashSet<>()
                 : new HashSet<>(promotionRepository.findAllByPromotionIdAndStateTrue(requestCategory.getPromotionListId()));
 
-        categoryEntity.setProductCategoryName(requestCategory.getCategoryName());
+        categoryEntity.setProductCategoryName(requestCategory.getCategoryName().toUpperCase());
         categoryEntity.setPromotionEntities(promotions);
     }
 

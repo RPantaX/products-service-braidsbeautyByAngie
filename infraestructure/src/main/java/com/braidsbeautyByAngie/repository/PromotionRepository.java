@@ -28,4 +28,6 @@ public interface PromotionRepository extends JpaRepository<PromotionEntity, Long
 
     @Query(value = "SELECT p FROM PromotionEntity p WHERE p.state = true")
     List<PromotionEntity> findAllByStateTrue();
+
+    Optional<PromotionEntity> findByPromotionNameAndStateTrue(String promotionName);
 }

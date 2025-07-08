@@ -45,6 +45,11 @@ public class CategoryController {
         return ResponseEntity.ok(ApiResponse.ok("list category by id",
                 categoryService.findCategoryByIdIn(categoryId)));
     }
+    @GetMapping(value = "/findByName/{categoryName}")
+    public ResponseEntity<ApiResponse> findCategoryByName(@PathVariable(name = "categoryName") String categoryName){
+        return ResponseEntity.ok(ApiResponse.ok("list category by name",
+                categoryService.findCategoryByNameIn(categoryName)));
+    }
 
     @PostMapping()
     public ResponseEntity<ApiResponse> saveCategory(@RequestBody RequestCategory requestCategory){

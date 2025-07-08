@@ -20,4 +20,5 @@ public interface PromotionServiceIn {
 
     ResponseListPageablePromotion listPromotionByPageIn(int pageNumber, int pageSize, String orderBy, String sortDir);
     List<PromotionDTO> listPromotionIn();
+    Optional<PromotionDTO> findPromotionByNameIn(String promotionName);
 }

@@ -42,12 +42,13 @@ public class ProductAdapter implements ProductServiceOut {
     @Transactional
     @Override
     public ProductDTO createProductOut(RequestProduct requestProduct) {
-        log.info("Creating product with name: {}", requestProduct.getProductName());
-        if(productNameExistsByName(requestProduct.getProductName())) ValidateUtil.evaluar(false, ProductsErrorEnum.PRODUCT_ALREADY_EXISTS_ERP00002);
+        String productNameUpperCase = requestProduct.getProductName().toUpperCase();
+        log.info("Creating product with name: {}", productNameUpperCase);
+        if(productNameExistsByName(productNameUpperCase)) ValidateUtil.evaluar(false, ProductsErrorEnum.PRODUCT_ALREADY_EXISTS_ERP00002);
         ProductCategoryEntity productCategorySaved = productCategoryRepository.findProductCategoryIdAndStateTrue(requestProduct.getProductCategoryId()).orElse(null);
         ValidateUtil.evaluar(productCategorySaved != null, GlobalErrorEnum.CATEGORY_NOT_FOUND_ERC00008);
         ProductEntity productEntity = ProductEntity.builder()
-                .productName(requestProduct.getProductName())
+                .productName(productNameUpperCase)
                 .productDescription(requestProduct.getProductDescription())
                 .productImage(requestProduct.getProductImage())
                 .productCategoryEntity(productCategorySaved)
@@ -131,11 +132,12 @@ public class ProductAdapter implements ProductServiceOut {
     @Transactional
     @Override
     public ProductDTO updateProductOut(Long productId, RequestProduct requestProduct) {
+        String productNameUpperCase = requestProduct.getProductName().toUpperCase();
         log.info("Searching for update product with ID: {}", productId);
         ProductEntity productEntitySaved = getProductEntity(productId);
 
-        if(!productEntitySaved.getProductName().equalsIgnoreCase(requestProduct.getProductName()) && productNameExistsByName(requestProduct.getProductName())) {
-            log.warn("Attempted to update product to an existing name: {}", requestProduct.getProductName());
+        if(!productEntitySaved.getProductName().equalsIgnoreCase(productNameUpperCase) && productNameExistsByName(productNameUpperCase)) {
+            log.warn("Attempted to update product to an existing name: {}", productNameUpperCase);
             ValidateUtil.evaluar(false, ProductsErrorEnum.PRODUCT_ALREADY_EXISTS_ERP00002);
         }
 
@@ -150,7 +152,7 @@ public class ProductAdapter implements ProductServiceOut {
         }
         productEntitySaved.setModifiedByUser(Constants.getUserInSession());
         productEntitySaved.setModifiedAt(Constants.getTimestamp());
-        productEntitySaved.setProductName(requestProduct.getProductName());
+        productEntitySaved.setProductName(productNameUpperCase);
         productEntitySaved.setProductDescription(requestProduct.getProductDescription());
         productEntitySaved.setProductImage(requestProduct.getProductImage());
         ProductEntity productEntityUpdated =productRepository.save(productEntitySaved);
