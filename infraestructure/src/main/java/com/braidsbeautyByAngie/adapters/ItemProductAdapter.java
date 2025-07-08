@@ -80,22 +80,24 @@ public class ItemProductAdapter implements ItemProductServiceOut {
     @Override
     public ProductItemDTO updateItemProductOut(Long itemProductId, RequestItemProduct requestItemProduct) {
         log.info("Searching for update product with ID: {}", itemProductId);
-        ValidateUtil.evaluar(productRepository.existsById(itemProductId), ProductsErrorEnum.ITEM_PRODUCT_NOT_FOUND_ERI00001);
+        ProductItemEntity productItemEntity = validateAndGetProductItem(itemProductId);
+        if (productItemExistsBySKU(requestItemProduct.getProductItemSKU().toUpperCase()) && !productItemEntity.getProductItemSKU().equals(requestItemProduct.getProductItemSKU().toUpperCase())) {
+            log.error("Product Item SKU already exists: {}", requestItemProduct.getProductItemSKU());
+            ValidateUtil.evaluar(false, ProductsErrorEnum.ITEM_PRODUCT_ALREADY_EXISTS_ERI00002);
+        }
         //varation
         Set<VariationOptionEntity> variationOptionEntities = new HashSet<>();
         if (!requestItemProduct.getRequestVariations().isEmpty()) {
             variationOptionEntities = saveVariations(requestItemProduct.getRequestVariations());
         }
-        ProductItemEntity productItemEntity1 = ProductItemEntity.builder()
-                .variationOptionEntitySet(variationOptionEntities)
-                .productItemSKU(requestItemProduct.getProductItemSKU())
-                .productItemImage(requestItemProduct.getProductItemImage())
-                .productItemPrice(requestItemProduct.getProductItemPrice())
-                .productItemQuantityInStock(requestItemProduct.getProductItemQuantityInStock())
-                .modifiedAt(Constants.getTimestamp())
-                .modifiedByUser(Constants.getUserInSession())
-                .build();
-        ProductItemEntity productItemSaved = productItemRepository.save(productItemEntity1);
+        productItemEntity.setVariationOptionEntitySet(variationOptionEntities);
+        productItemEntity.setProductItemSKU(requestItemProduct.getProductItemSKU().toUpperCase());
+        productItemEntity.setProductItemImage(requestItemProduct.getProductItemImage());
+        productItemEntity.setProductItemPrice(requestItemProduct.getProductItemPrice());
+        productItemEntity.setProductItemQuantityInStock(requestItemProduct.getProductItemQuantityInStock());
+        productItemEntity.setModifiedAt(Constants.getTimestamp());
+        productItemEntity.setModifiedByUser(Constants.getUserInSession());
+        ProductItemEntity productItemSaved = productItemRepository.save(productItemEntity);
         log.info("itemProduct updated with ID: {}", productItemSaved.getProductItemId());
         return productItemMapper.mapProductItemEntityToDto(productItemSaved);
     }
@@ -196,7 +198,7 @@ public class ItemProductAdapter implements ItemProductServiceOut {
     }
 
     private boolean productItemExistsBySKU(String sku) {
-        return productItemRepository.existsByProductItemSKU(sku);
+        return productItemRepository.existsByProductItemSKU(sku.toUpperCase());
     }
     private Set<VariationOptionEntity> saveVariations(List<RequestVariationName> requestVariationNameList) {
         return requestVariationNameList.stream().map(
