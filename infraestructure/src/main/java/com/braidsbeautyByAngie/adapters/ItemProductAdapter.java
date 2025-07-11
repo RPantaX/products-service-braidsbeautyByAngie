@@ -13,15 +13,19 @@ import com.braidsbeautyByAngie.mapper.*;
 import com.braidsbeautyByAngie.ports.out.ItemProductServiceOut;
 import com.braidsbeautyByAngie.repository.*;
 
+import com.braidsbeautybyangie.sagapatternspringboot.aggregates.aggregates.aws.IBucketUtil;
 import com.braidsbeautybyangie.sagapatternspringboot.aggregates.aggregates.dto.Product;
+import com.braidsbeautybyangie.sagapatternspringboot.aggregates.aggregates.util.BucketParams;
 import com.braidsbeautybyangie.sagapatternspringboot.aggregates.aggregates.util.GlobalErrorEnum;
 import com.braidsbeautybyangie.sagapatternspringboot.aggregates.aggregates.util.ValidateUtil;
 import lombok.RequiredArgsConstructor;
 
 import lombok.extern.slf4j.Slf4j;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
 import java.util.*;
@@ -40,6 +44,9 @@ public class ItemProductAdapter implements ItemProductServiceOut {
     private final VariationRepository variationRepository;
     private final VariationOptionRepository variationOptionRepository;
 
+    private final IBucketUtil bucketUtil;
+    @Value("${BUCKET_NAME_USUARIOS}")
+    private String bucketName;
 
     @Transactional
     @Override
@@ -53,7 +60,6 @@ public class ItemProductAdapter implements ItemProductServiceOut {
                 .variationOptionEntitySet(variationEntitiesSaved)
                 .productEntity(productEntity)
                 .productItemSKU(requestItemProduct.getProductItemSKU())
-                .productItemImage(requestItemProduct.getProductItemImage())
                 .productItemPrice(requestItemProduct.getProductItemPrice())
                 .productItemQuantityInStock(requestItemProduct.getProductItemQuantityInStock())
                 .createdAt(Constants.getTimestamp())
@@ -62,6 +68,12 @@ public class ItemProductAdapter implements ItemProductServiceOut {
                 .build();
 
         ProductItemEntity productItemEntitySaved =  productItemRepository.save(productItemEntity);
+
+        if( requestItemProduct.getImagen() != null && !requestItemProduct.getImagen().isEmpty()) {
+            String imageUrl = saveImageInS3(requestItemProduct.getImagen(), productEntity.getProductId() ,productItemEntitySaved.getProductItemId());
+            productItemEntitySaved.setProductItemImage(imageUrl);
+            productItemRepository.save(productItemEntitySaved);
+        }
         log.info("itemProduct '{}' created successfully with ID: {}", productItemEntity.getProductItemId(), productItemEntity.getProductEntity().getProductId());
         return productItemMapper.mapProductItemEntityToDto(productItemEntitySaved);
     }
@@ -92,12 +104,14 @@ public class ItemProductAdapter implements ItemProductServiceOut {
         }
         productItemEntity.setVariationOptionEntitySet(variationOptionEntities);
         productItemEntity.setProductItemSKU(requestItemProduct.getProductItemSKU().toUpperCase());
-        productItemEntity.setProductItemImage(requestItemProduct.getProductItemImage());
         productItemEntity.setProductItemPrice(requestItemProduct.getProductItemPrice());
         productItemEntity.setProductItemQuantityInStock(requestItemProduct.getProductItemQuantityInStock());
         productItemEntity.setModifiedAt(Constants.getTimestamp());
         productItemEntity.setModifiedByUser(Constants.getUserInSession());
+
         ProductItemEntity productItemSaved = productItemRepository.save(productItemEntity);
+
+        updateImageInS3(requestItemProduct.getImagen(), productItemSaved, requestItemProduct.isDeleteFile());
         log.info("itemProduct updated with ID: {}", productItemSaved.getProductItemId());
         return productItemMapper.mapProductItemEntityToDto(productItemSaved);
     }
@@ -117,7 +131,7 @@ public class ItemProductAdapter implements ItemProductServiceOut {
         productItemEntityOptional.setModifiedByUser(Constants.getUserInSession());
         productItemEntityOptional.setProductEntity(null);
         ProductItemEntity itemProductDeleted = productItemRepository.save(productItemEntityOptional);
-
+        //deleteOldImageFromS3(itemProductId);
         log.info("Product deleted with ID: {}", itemProductDeleted.getProductItemId());
 
         return productItemMapper.mapProductItemEntityToDto(itemProductDeleted);
@@ -184,7 +198,64 @@ public class ItemProductAdapter implements ItemProductServiceOut {
         }
         return responseList;
     }
+    private String saveImageInS3(MultipartFile imagen, Long productId, Long itemProductId) {
+        BucketParams bucketParams = buildBucketParams(productId, imagen, itemProductId);
+        bucketUtil.addFile(bucketParams);
+        //bucketUtil.setPublic(bucketParams, true);
+        return bucketUtil.getUrl(bucketParams);
+    }
+    public BucketParams buildBucketParams(Long productId, MultipartFile imagen, Long itemProductId){
+        String fileName = "itemProduct-" + productId + "-"+itemProductId+ "-" + System.currentTimeMillis();
 
+        // Para operaciones de eliminación (cuando imagen es null)
+        if (imagen == null) {
+            // Construir el path basado en el patrón de nombres que usamos
+            String filePath = "itemProduct/" + fileName; // Sin extensión para eliminación
+            return BucketParams.builder()
+                    .bucketName(bucketName)
+                    .filePath(filePath)
+                    .build();
+        } else {
+            // Para operaciones de creación/actualización
+            String originalFileName = imagen.getOriginalFilename();
+            if (originalFileName != null && originalFileName.contains(".")) {
+                String extension = originalFileName.substring(originalFileName.lastIndexOf("."));
+                fileName += extension;
+            }
+
+            return BucketParams.builder()
+                    .file(imagen)
+                    .bucketName(bucketName)
+                    .filePath("itemProduct/" + fileName)
+                    .build();
+        }
+    }
+    private void updateImageInS3(MultipartFile newImage, ProductItemEntity productItemEntity, boolean deleteFile) {
+        String currentImageUrl = productItemEntity.getProductItemImage();
+
+        if (deleteFile && currentImageUrl != null && !currentImageUrl.isEmpty()) {
+            // Eliminar imagen existente
+            Constants.deleteOldImageFromS3(currentImageUrl, bucketUtil, bucketName);
+            productItemEntity.setProductItemImage(null);
+            productItemRepository.save(productItemEntity);
+            log.info("Image deleted for itemProduct ID: {}", productItemEntity.getProductItemId());
+            return;
+        }
+
+        if (newImage != null && !newImage.isEmpty()) {
+            // Si ya existe una imagen, eliminarla primero
+            if (currentImageUrl != null && !currentImageUrl.isEmpty()) {
+                Constants.deleteOldImageFromS3(currentImageUrl, bucketUtil, bucketName);
+                log.info("Old image replaced for itemProduct ID: {}", productItemEntity.getProductItemId());
+            }
+
+            // Guardar nueva imagen
+            String newImageUrl = saveImageInS3(newImage, productItemEntity.getProductEntity().getProductId(), productItemEntity.getProductItemId());
+            productItemEntity.setProductItemImage(newImageUrl);
+            productItemRepository.save(productItemEntity);
+            log.info("New image saved for itemProduct ID: {}", productItemEntity.getProductItemId());
+        }
+    }
     private boolean itemProductExistsById(Long itemProductId) {
         return productItemRepository.existsById(itemProductId);
     }

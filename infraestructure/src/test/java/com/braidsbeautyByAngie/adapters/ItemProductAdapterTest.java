@@ -134,7 +134,7 @@ class ItemProductAdapterTest {
                 .productItemSKU("SKU001")
                 .productItemPrice(BigDecimal.valueOf(999.99))
                 .productItemQuantityInStock(10)
-                .productItemImage("image.jpg")
+                //.productItemImage("image.jpg")
                 .requestVariations(Arrays.asList(requestVariationName))
                 .build();
     }
@@ -180,7 +180,7 @@ class ItemProductAdapterTest {
                 .productItemSKU("SKU004")
                 .productItemPrice(BigDecimal.valueOf(899.99))
                 .productItemQuantityInStock(8)
-                .productItemImage("updated_image.jpg")
+                //.productItemImage("updated_image.jpg")
                 .requestVariations(Collections.emptyList())
                 .build();
 
@@ -498,7 +498,7 @@ class ItemProductAdapterTest {
                 .productItemSKU("SKU002")
                 .productItemPrice(BigDecimal.valueOf(1099.99))
                 .productItemQuantityInStock(15)
-                .productItemImage("new_image.jpg")
+                //.productItemImage("new_image.jpg")
                 .requestVariations(Arrays.asList(requestVariationName))
                 .build();
 

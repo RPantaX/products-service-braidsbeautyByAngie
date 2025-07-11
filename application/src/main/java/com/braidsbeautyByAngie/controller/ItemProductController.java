@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.info.Info;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -40,13 +41,13 @@ public class ItemProductController {
                 productServiceIn.listItemProductsByIdsIn(ids)));
     }
 
-    @PostMapping()
-    public ResponseEntity<ApiResponse> saveItemProduct(@RequestBody RequestItemProduct requestItemProduct){
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ApiResponse> saveItemProduct(@ModelAttribute RequestItemProduct requestItemProduct){
         return new ResponseEntity<>(ApiResponse.create("item saved", productServiceIn.createItemProductIn(requestItemProduct)), HttpStatus.CREATED);
     }
 
-    @PutMapping("/{itemProductId}")
-    public ResponseEntity<ApiResponse> updateItemProduct(@PathVariable(name = "itemProductId") Long itemProductId, @RequestBody RequestItemProduct requestItemProduct){
+    @PutMapping(value = "/{itemProductId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ApiResponse> updateItemProduct(@PathVariable(name = "itemProductId") Long itemProductId, @ModelAttribute RequestItemProduct requestItemProduct){
         return ResponseEntity.ok(ApiResponse.create("Item product updated",
                 productServiceIn.updateItemProductIn(itemProductId, requestItemProduct)));
     }
