@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.info.Info;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -44,15 +45,15 @@ public class ProductController {
         return ResponseEntity.ok(ApiResponse.ok("Product retrieved successfully",
                 productServiceIn.findProductByIdIn(productId)));
     }
-    @PostMapping()
     @RequireRole("ROLE_ADMIN") // Solo administradores
-    public ResponseEntity<ApiResponse> saveProduct(@RequestBody RequestProduct requestProduct){
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ApiResponse> saveProduct(@ModelAttribute RequestProduct requestProduct){
         return new ResponseEntity<>(ApiResponse.create("product saved", productServiceIn.createProductIn(requestProduct)), HttpStatus.CREATED);
     }
 
-    @PutMapping("/{productId}")
+    @PutMapping(value = "/{productId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @RequireRole(value = {"ROLE_ADMIN", "ROLE_MANAGER"}) // Admin O Manager
-    public ResponseEntity<ApiResponse> updateProduct(@PathVariable(name = "productId") Long productId, @RequestBody RequestProduct requestProduct){
+    public ResponseEntity<ApiResponse> updateProduct(@PathVariable(name = "productId") Long productId, @ModelAttribute RequestProduct requestProduct){
         return ResponseEntity.ok(ApiResponse.create("Product updated",
                 productServiceIn.updateProductIn(productId, requestProduct)));
     }

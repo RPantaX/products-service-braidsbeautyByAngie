@@ -11,18 +11,22 @@ import com.braidsbeautyByAngie.mapper.*;
 import com.braidsbeautyByAngie.ports.out.ProductServiceOut;
 import com.braidsbeautyByAngie.repository.*;
 
+import com.braidsbeautybyangie.sagapatternspringboot.aggregates.aggregates.aws.IBucketUtil;
+import com.braidsbeautybyangie.sagapatternspringboot.aggregates.aggregates.util.BucketParams;
 import com.braidsbeautybyangie.sagapatternspringboot.aggregates.aggregates.util.GlobalErrorEnum;
 import com.braidsbeautybyangie.sagapatternspringboot.aggregates.aggregates.util.ValidateUtil;
 import lombok.RequiredArgsConstructor;
 
 import lombok.extern.slf4j.Slf4j;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
 import java.util.*;
@@ -35,9 +39,14 @@ public class ProductAdapter implements ProductServiceOut {
 
     private final ProductMapper productMapper;
     private final PromotionMapper promotionMapper;
+
     private final ProductRepository productRepository;
     private final ProductCategoryRepository productCategoryRepository;
     private final ProductItemRepository productItemRepository;
+
+    private final IBucketUtil bucketUtil;
+    @Value("${BUCKET_NAME_USUARIOS}")
+    private String bucketName;
 
     @Transactional
     @Override
@@ -50,7 +59,6 @@ public class ProductAdapter implements ProductServiceOut {
         ProductEntity productEntity = ProductEntity.builder()
                 .productName(productNameUpperCase)
                 .productDescription(requestProduct.getProductDescription())
-                .productImage(requestProduct.getProductImage())
                 .productCategoryEntity(productCategorySaved)
                 .state(Constants.STATUS_ACTIVE)
                 .modifiedByUser(Constants.getUserInSession())
@@ -59,6 +67,12 @@ public class ProductAdapter implements ProductServiceOut {
 
         ProductEntity productEntitySaved = productRepository.save(productEntity);
 
+
+        if( requestProduct.getImagen() != null && !requestProduct.getImagen().isEmpty()) {
+            String imageUrl = saveImageInS3(requestProduct.getImagen(), productEntitySaved.getProductId());
+            productEntitySaved.setProductImage(imageUrl);
+            productRepository.save(productEntitySaved);
+        }
         log.info("Product '{}' created successfully with ID: {}",productEntity.getProductName(),productEntity.getProductId());
         return productMapper.mapProductEntityToDto(productEntitySaved);
     }
@@ -154,11 +168,14 @@ public class ProductAdapter implements ProductServiceOut {
         productEntitySaved.setModifiedAt(Constants.getTimestamp());
         productEntitySaved.setProductName(productNameUpperCase);
         productEntitySaved.setProductDescription(requestProduct.getProductDescription());
-        productEntitySaved.setProductImage(requestProduct.getProductImage());
+
         ProductEntity productEntityUpdated =productRepository.save(productEntitySaved);
+        // Manejar actualización de imagen
+        updateImageInS3(requestProduct.getImagen(), productId, productEntityUpdated, requestProduct.isDeleteFile());
         log.info("product updated with ID: {}", productEntitySaved.getProductId());
         return productMapper.mapProductEntityToDto(productEntityUpdated);
     }
+
     @Override
     public ProductDTO deleteProductOut(Long productId) {
         log.info("Searching product for delete with ID: {}", productId);
@@ -179,6 +196,7 @@ public class ProductAdapter implements ProductServiceOut {
         productEntitySaved.setProductCategoryEntity(null);
         productEntitySaved.setDeletedAt(Constants.getTimestamp());
         productEntitySaved.setState(Constants.STATUS_INACTIVE);
+        //deleteOldImageFromS3(productId);
         log.info("Product deleted with ID: {}", productId);
         return productMapper.mapProductEntityToDto(productRepository.save(productEntitySaved));
     }
@@ -262,7 +280,64 @@ public class ProductAdapter implements ProductServiceOut {
                 productPage.isLast()
         );
     }
+    private String saveImageInS3(MultipartFile imagen, Long productId ) {
+        BucketParams bucketParams = buildBucketParams(productId, imagen);
+        bucketUtil.addFile(bucketParams);
+        //bucketUtil.setPublic(bucketParams, true);
+        return bucketUtil.getUrl(bucketParams);
+    }
+    public BucketParams buildBucketParams(Long productId, MultipartFile imagen){
+        String fileName = "product-" + productId + "-" + System.currentTimeMillis();
 
+        // Para operaciones de eliminación (cuando imagen es null)
+        if (imagen == null) {
+            // Construir el path basado en el patrón de nombres que usamos
+            String filePath = "products/" + fileName; // Sin extensión para eliminación
+            return BucketParams.builder()
+                    .bucketName(bucketName)
+                    .filePath(filePath)
+                    .build();
+        } else {
+            // Para operaciones de creación/actualización
+            String originalFileName = imagen.getOriginalFilename();
+            if (originalFileName != null && originalFileName.contains(".")) {
+                String extension = originalFileName.substring(originalFileName.lastIndexOf("."));
+                fileName += extension;
+            }
+
+            return BucketParams.builder()
+                    .file(imagen)
+                    .bucketName(bucketName)
+                    .filePath("products/" + fileName)
+                    .build();
+        }
+    }
+    private void updateImageInS3(MultipartFile newImage, Long productId, ProductEntity productEntity, boolean deleteFile) {
+        String currentImageUrl = productEntity.getProductImage();
+
+        if (deleteFile && currentImageUrl != null && !currentImageUrl.isEmpty()) {
+            // Eliminar imagen existente
+            Constants.deleteOldImageFromS3(currentImageUrl, bucketUtil, bucketName);
+            productEntity.setProductImage(null);
+            productRepository.save(productEntity);
+            log.info("Image deleted for product ID: {}", productId);
+            return;
+        }
+
+        if (newImage != null && !newImage.isEmpty()) {
+            // Si ya existe una imagen, eliminarla primero
+            if (currentImageUrl != null && !currentImageUrl.isEmpty()) {
+                Constants.deleteOldImageFromS3(currentImageUrl, bucketUtil, bucketName);
+                log.info("Old image replaced for product ID: {}", productId);
+            }
+
+            // Guardar nueva imagen
+            String newImageUrl = saveImageInS3(newImage, productId);
+            productEntity.setProductImage(newImageUrl);
+            productRepository.save(productEntity);
+            log.info("New image saved for product ID: {}", productId);
+        }
+    }
 
     private boolean productNameExistsByName(String productName){ return productRepository.existsByProductName(productName); }
 

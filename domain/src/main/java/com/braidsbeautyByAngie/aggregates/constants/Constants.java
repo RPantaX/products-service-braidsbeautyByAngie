@@ -1,12 +1,18 @@
 package com.braidsbeautyByAngie.aggregates.constants;
 
+import com.braidsbeautybyangie.sagapatternspringboot.aggregates.aggregates.aws.IBucketUtil;
+import com.braidsbeautybyangie.sagapatternspringboot.aggregates.aggregates.util.BucketParams;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.sql.Timestamp;
 
+@Slf4j
 public class Constants {
+
     public static final Boolean STATUS_ACTIVE=true;
     public static final Boolean STATUS_INACTIVE=false;
     public static final String NUM_PAG_BY_DEFECT="0";
@@ -36,5 +42,32 @@ public class Constants {
         String userId = request.getHeader("X-User-Id");
         return username + " - " + userId;
     }
-
+    public static void deleteOldImageFromS3(String imageUrl, IBucketUtil bucketUtil, String bucketName) {
+        try {
+            String filePath = extractFilePathFromUrl(imageUrl, bucketName);
+            if (filePath != null) {
+                BucketParams bucketParams = BucketParams.builder()
+                        .bucketName(bucketName)
+                        .filePath(filePath)
+                        .build();
+                bucketUtil.deleteFile(bucketParams);
+                log.info("File deleted from S3: {}", filePath);
+            }
+        } catch (Exception e) {
+            log.error("Error deleting file from S3: {}", imageUrl, e);
+        }
+    }
+    public static String extractFilePathFromUrl(String imageUrl, String bucketName) {
+        try {
+            if (imageUrl.contains(bucketName + ".s3.amazonaws.com/")) {
+                return imageUrl.substring(imageUrl.indexOf(bucketName + ".s3.amazonaws.com/") + (bucketName + ".s3.amazonaws.com/").length());
+            } else if (imageUrl.contains("s3.amazonaws.com/" + bucketName + "/")) {
+                return imageUrl.substring(imageUrl.indexOf("s3.amazonaws.com/" + bucketName + "/") + ("s3.amazonaws.com/" + bucketName + "/").length());
+            }
+            return null;
+        } catch (Exception e) {
+            log.error("Error extracting file path from URL: {}", imageUrl, e);
+            return null;
+        }
+    }
 }

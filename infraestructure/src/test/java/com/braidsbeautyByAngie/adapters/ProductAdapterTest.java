@@ -134,7 +134,7 @@ class ProductAdapterTest {
         requestProduct = RequestProduct.builder()
                 .productName("iPhone 15")
                 .productDescription("Latest iPhone model")
-                .productImage("iphone15.jpg")
+                //.productImage("iphone15.jpg")
                 .productCategoryId(1L)
                 .build();
     }
@@ -372,7 +372,7 @@ class ProductAdapterTest {
         RequestProduct updateRequest = RequestProduct.builder()
                 .productName("iPhone 15") // Same name
                 .productDescription("Updated description")
-                .productImage("updated_image.jpg")
+                //.productImage("updated_image.jpg")
                 .productCategoryId(1L)
                 .build();
 
@@ -427,7 +427,7 @@ class ProductAdapterTest {
         RequestProduct updateRequest = RequestProduct.builder()
                 .productName("iPhone 16") // Different name
                 .productDescription("Updated description")
-                .productImage("updated_image.jpg")
+                //.productImage("updated_image.jpg")
                 .productCategoryId(1L)
                 .build();
 
@@ -459,7 +459,7 @@ class ProductAdapterTest {
         RequestProduct updateRequest = RequestProduct.builder()
                 .productName("Samsung Galaxy") // Different existing name
                 .productDescription("Updated description")
-                .productImage("updated_image.jpg")
+                //.productImage("updated_image.jpg")
                 .productCategoryId(1L)
                 .build();
 
@@ -507,7 +507,7 @@ class ProductAdapterTest {
         RequestProduct updateRequest = RequestProduct.builder()
                 .productName("iPhone 15")
                 .productDescription("Updated description")
-                .productImage("updated_image.jpg")
+                //.productImage("updated_image.jpg")
                 .productCategoryId(null) // Null category ID
                 .build();
 
@@ -536,7 +536,7 @@ class ProductAdapterTest {
         RequestProduct updateRequest = RequestProduct.builder()
                 .productName("iPhone 15")
                 .productDescription("Updated description")
-                .productImage("updated_image.jpg")
+                //.productImage("updated_image.jpg")
                 .productCategoryId(999L) // Invalid category
                 .build();
 

@@ -45,7 +45,7 @@ class ProductControllerUnitTest {
         requestProduct = RequestProduct.builder()
                 .productName("iPhone 15")
                 .productDescription("Latest iPhone model")
-                .productImage("iphone15.jpg")
+                //.productImage("iphone15.jpg")
                 .productCategoryId(1L)
                 .build();
 

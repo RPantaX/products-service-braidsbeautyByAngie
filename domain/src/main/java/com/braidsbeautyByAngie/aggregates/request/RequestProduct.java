@@ -1,18 +1,18 @@
 package com.braidsbeautyByAngie.aggregates.request;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
+import org.springframework.web.multipart.MultipartFile;
 
 
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
 @Getter
+@Setter
 public class RequestProduct {
     private String productName;
     private String productDescription;
-    private String productImage;
+    private MultipartFile imagen;
     private Long productCategoryId;
+    private boolean deleteFile;
 }
