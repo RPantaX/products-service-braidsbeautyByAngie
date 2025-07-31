@@ -1,19 +1,16 @@
 package com.braidsbeautyByAngie.impl;
 
 import com.braidsbeautyByAngie.aggregates.dto.ProductDTO;
-import com.braidsbeautyByAngie.aggregates.dto.ProductItemDTO;
 import com.braidsbeautyByAngie.aggregates.request.RequestProduct;
+import com.braidsbeautyByAngie.aggregates.request.RequestProductFilter;
 import com.braidsbeautyByAngie.aggregates.response.products.ResponseListPageableProduct;
 import com.braidsbeautyByAngie.aggregates.response.products.ResponseProduct;
+import com.braidsbeautyByAngie.aggregates.response.products.ResponseProductFilterOptions;
 import com.braidsbeautyByAngie.ports.in.ProductServiceIn;
 import com.braidsbeautyByAngie.ports.out.ProductServiceOut;
 
-import com.braidsbeautybyangie.sagapatternspringboot.aggregates.aggregates.events.ProductReservedEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -45,4 +42,15 @@ public class ProductsServiceImpl implements ProductServiceIn {
     public ResponseListPageableProduct listProductPageableIn(int pageNumber, int pageSize, String orderBy, String sortDir) {
         return productServiceOut.listProductPageableOut(pageNumber, pageSize, orderBy, sortDir);
     }
+
+    @Override
+    public ResponseListPageableProduct filterProductsIn(RequestProductFilter filter) {
+        return productServiceOut.filterProductsOut(filter);
+    }
+
+    @Override
+    public ResponseProductFilterOptions getProductFilterOptionsIn() {
+        return productServiceOut.getProductFilterOptionsOut();
+    }
+
 }

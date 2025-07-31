@@ -4,6 +4,7 @@ import com.braidsbeautyByAngie.aggregates.constants.Constants;
 import com.braidsbeautyByAngie.aggregates.constants.ProductsErrorEnum;
 import com.braidsbeautyByAngie.aggregates.dto.*;
 import com.braidsbeautyByAngie.aggregates.request.RequestProduct;
+import com.braidsbeautyByAngie.aggregates.request.RequestProductFilter;
 import com.braidsbeautyByAngie.aggregates.response.categories.ResponseCategoryy;
 import com.braidsbeautyByAngie.aggregates.response.products.*;
 import com.braidsbeautyByAngie.entity.*;
@@ -43,7 +44,8 @@ public class ProductAdapter implements ProductServiceOut {
     private final ProductRepository productRepository;
     private final ProductCategoryRepository productCategoryRepository;
     private final ProductItemRepository productItemRepository;
-
+    private final VariationRepository variationRepository;
+    private final VariationOptionRepository variationOptionRepository;
     private final IBucketUtil bucketUtil;
     @Value("${BUCKET_NAME_USUARIOS}")
     private String bucketName;
@@ -279,6 +281,121 @@ public class ProductAdapter implements ProductServiceOut {
                 productPage.getTotalElements(),
                 productPage.isLast()
         );
+    }
+
+    @Override
+    public ResponseListPageableProduct filterProductsOut(RequestProductFilter filter) {
+        log.info("Executing product filter in adapter with parameters: {}", filter);
+        // Validaciones de negocio si son necesarias
+        validateFilterRequest(filter);
+        return productCategoryRepository.filterProducts(filter);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ResponseProductFilterOptions getProductFilterOptionsOut() {
+        log.info("Getting product filter options");
+
+        try {
+            // Obtener categorías activas
+            List<ProductCategoryEntity> categories = productCategoryRepository
+                    .findAllByStateTrue()
+                    .stream()
+                    .filter(cat -> cat.getParentCategory() == null) // Solo categorías padre
+                    .collect(Collectors.toList());
+
+            List<ResponseCategoryOption> categoryOptions = categories.stream()
+                    .map(category -> ResponseCategoryOption.builder()
+                            .id(category.getProductCategoryId())
+                            .name(category.getProductCategoryName())
+                            .productCount(getProductCountByCategory(category.getProductCategoryId()))
+                            .build())
+                    .collect(Collectors.toList());
+
+            // Obtener rango de precios
+            ResponsePriceRange priceRange = getPriceRange();
+
+            // Obtener variaciones disponibles
+            List<ResponseVariationOption> variationOptions = getVariationOptions();
+
+            return ResponseProductFilterOptions.builder()
+                    .categories(categoryOptions)
+                    .priceRange(priceRange)
+                    .variations(variationOptions)
+                    .build();
+
+        } catch (Exception e) {
+            log.error("Error getting product filter options: {}", e.getMessage());
+            throw new RuntimeException("Error al obtener opciones de filtro", e);
+        }
+    }
+    private int getProductCountByCategory(Long categoryId) {
+        return productRepository.countByCategoryIdAndStateTrue(categoryId);
+    }
+
+    private ResponsePriceRange getPriceRange() {
+        List<Object[]> result = productItemRepository.findPriceRange();
+        if (result == null || result.isEmpty()) {
+            return ResponsePriceRange.builder()
+                    .min(BigDecimal.ZERO)
+                    .max(BigDecimal.ZERO)
+                    .build();
+        }
+        Object[] priceRange = result.get(0);
+
+        BigDecimal minPrice = priceRange[0] != null ? new BigDecimal(priceRange[0].toString()) : BigDecimal.ZERO;
+        BigDecimal maxPrice = priceRange[1] != null ? new BigDecimal(priceRange[1].toString()) : BigDecimal.ZERO;
+
+        return ResponsePriceRange.builder()
+                .min(minPrice)
+                .max(maxPrice)
+                .build();
+
+    }
+
+    private List<ResponseVariationOption> getVariationOptions() {
+        // Obtener todas las variaciones activas con sus opciones
+        List<VariationEntity> variations = variationRepository.findAllByStateTrue();
+
+        return variations.stream()
+                .map(variation -> {
+                    List<String> options = variationOptionRepository
+                            .findAllByVariationEntityAndStateTrue(variation)
+                            .stream()
+                            .map(VariationOptionEntity::getVariationOptionValue)
+                            .distinct()
+                            .collect(Collectors.toList());
+
+                    return ResponseVariationOption.builder()
+                            .name(variation.getVariationName())
+                            .options(options)
+                            .build();
+                })
+                .collect(Collectors.toList());
+    }
+    private void validateFilterRequest(RequestProductFilter filter) {
+        // Validar rangos de precio
+        if (filter.getMinPrice() != null && filter.getMaxPrice() != null) {
+            if (filter.getMinPrice().compareTo(filter.getMaxPrice()) > 0) {
+                throw new IllegalArgumentException("El precio mínimo no puede ser mayor al precio máximo");
+            }
+        }
+
+        // Validar rangos de descuento
+        if (filter.getMinDiscountRate() != null && filter.getMaxDiscountRate() != null) {
+            if (filter.getMinDiscountRate().compareTo(filter.getMaxDiscountRate()) > 0) {
+                throw new IllegalArgumentException("La tasa de descuento mínima no puede ser mayor a la máxima");
+            }
+        }
+
+        // Validar paginación
+        if (filter.getPageNumber() < 0) {
+            filter.setPageNumber(0);
+        }
+
+        if (filter.getPageSize() <= 0 || filter.getPageSize() > 100) {
+            filter.setPageSize(10);
+        }
     }
     private String saveImageInS3(MultipartFile imagen, Long productId ) {
         BucketParams bucketParams = buildBucketParams(productId, imagen);

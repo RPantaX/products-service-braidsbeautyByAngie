@@ -2,8 +2,10 @@ package com.braidsbeautyByAngie.ports.in;
 
 import com.braidsbeautyByAngie.aggregates.dto.ProductDTO;
 import com.braidsbeautyByAngie.aggregates.request.RequestProduct;
+import com.braidsbeautyByAngie.aggregates.request.RequestProductFilter;
 import com.braidsbeautyByAngie.aggregates.response.products.ResponseListPageableProduct;
 import com.braidsbeautyByAngie.aggregates.response.products.ResponseProduct;
+import com.braidsbeautyByAngie.aggregates.response.products.ResponseProductFilterOptions;
 
 public interface ProductServiceIn {
 
@@ -17,5 +19,7 @@ public interface ProductServiceIn {
 
     ResponseListPageableProduct listProductPageableIn(int pageNumber, int pageSize, String orderBy, String sortDir);
 
+    ResponseListPageableProduct filterProductsIn(RequestProductFilter filter);
 
+    ResponseProductFilterOptions getProductFilterOptionsIn();
 }

@@ -125,4 +125,6 @@ public interface ProductRepository extends JpaRepository<ProductEntity,Long> {
       AND pi.state = true
 """)
     List<Object[]> findProductWithItemsAndCategory(@Param("productId") Long productId);
+    @Query("SELECT COUNT(p) FROM ProductEntity p WHERE p.productCategoryEntity.productCategoryId = :categoryId AND p.state = true")
+    int countByCategoryIdAndStateTrue(@Param("categoryId") Long categoryId);
 }

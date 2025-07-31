@@ -48,5 +48,6 @@ public interface ProductItemRepository extends JpaRepository<ProductItemEntity, 
 """)
     List<Object[]> findProductItemsWithVariations(@Param("productItemIds") List<Long> productItemIds);
 
-
+    @Query("SELECT MIN(pi.productItemPrice), MAX(pi.productItemPrice) FROM ProductItemEntity pi WHERE pi.state = true")
+    List<Object[]> findPriceRange();
 }

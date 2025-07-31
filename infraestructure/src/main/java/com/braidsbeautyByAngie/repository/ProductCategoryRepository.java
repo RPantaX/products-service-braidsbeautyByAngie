@@ -1,6 +1,7 @@
 package com.braidsbeautyByAngie.repository;
 
 import com.braidsbeautyByAngie.entity.ProductCategoryEntity;
+import com.braidsbeautyByAngie.repository.dao.ProductRepositoryCustom;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -11,7 +12,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface ProductCategoryRepository extends JpaRepository<ProductCategoryEntity, Long> {
+public interface ProductCategoryRepository extends JpaRepository<ProductCategoryEntity, Long>, ProductRepositoryCustom {
 
     Boolean existsByProductCategoryName(String categoryName);
 
@@ -28,4 +29,5 @@ public interface ProductCategoryRepository extends JpaRepository<ProductCategory
     List<ProductCategoryEntity> findAllByPromotionIdAndStateTrue(List<Long> promotionId);
 
     Optional<ProductCategoryEntity> findByProductCategoryNameAndStateTrue(String categoryName);
+    List<ProductCategoryEntity> findAllByStateTrue();
 }

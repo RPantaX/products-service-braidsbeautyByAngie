@@ -3,6 +3,8 @@ package com.braidsbeautyByAngie.controller;
 import com.braidsbeautyByAngie.aggregates.constants.Constants;
 
 import com.braidsbeautyByAngie.aggregates.request.RequestProduct;
+import com.braidsbeautyByAngie.aggregates.request.RequestProductFilter;
+import com.braidsbeautyByAngie.aggregates.response.products.ResponseListPageableProduct;
 import com.braidsbeautyByAngie.auth.RequireRole;
 import com.braidsbeautyByAngie.ports.in.ProductServiceIn;
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
@@ -15,6 +17,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import com.braidsbeautybyangie.sagapatternspringboot.aggregates.aggregates.util.ApiResponse;
+
+import java.math.BigDecimal;
+import java.util.List;
+
 
 @OpenAPIDefinition(
         info = @Info(
@@ -64,5 +70,49 @@ public class ProductController {
                 productServiceIn.deleteProductIn(productId)));
     }
 
+    @PostMapping("/filter")
+    public ResponseEntity<ApiResponse> filterProducts(
+            @RequestBody RequestProductFilter filter) {
 
+        ResponseListPageableProduct response = productServiceIn.filterProductsIn(filter);
+
+        return ResponseEntity.ok(ApiResponse.ok("Products with filter", response) );
+    }
+
+    // Método alternativo con parámetros GET para filtros simples
+    @GetMapping("/search")
+    public ResponseEntity<ApiResponse> searchProducts(
+            @RequestParam(required = false) String searchTerm,
+            @RequestParam(required = false) Long categoryId,
+            @RequestParam(required = false) String minPrice,
+            @RequestParam(required = false) String maxPrice,
+            @RequestParam(required = false) Boolean inStock,
+            @RequestParam(required = false) Boolean hasPromotion,
+            @RequestParam(defaultValue = "0") int pageNumber,
+            @RequestParam(defaultValue = "10") int pageSize,
+            @RequestParam(defaultValue = "productName") String sortBy,
+            @RequestParam(defaultValue = "ASC") String sortDirection) {
+
+        RequestProductFilter filter = RequestProductFilter.builder()
+                .searchTerm(searchTerm)
+                .categoryIds(categoryId != null ? List.of(categoryId) : null)
+                .minPrice(minPrice != null ? new BigDecimal(minPrice) : null)
+                .maxPrice(maxPrice != null ? new BigDecimal(maxPrice) : null)
+                .inStock(inStock)
+                .hasPromotion(hasPromotion)
+                .pageNumber(pageNumber)
+                .pageSize(pageSize)
+                .sortBy(sortBy)
+                .sortDirection(sortDirection)
+                .build();
+
+        ResponseListPageableProduct response = productServiceIn.filterProductsIn(filter);
+
+        return ResponseEntity.ok(ApiResponse.ok("PRODUCTS WITH SEARCH", response) );
+    }
+    @GetMapping("/filter-options")
+    public ResponseEntity<ApiResponse> getProductFilterOptions() {
+        return ResponseEntity.ok(ApiResponse.ok("Filter options retrieved successfully",
+                productServiceIn.getProductFilterOptionsIn()));
+    }
 }
