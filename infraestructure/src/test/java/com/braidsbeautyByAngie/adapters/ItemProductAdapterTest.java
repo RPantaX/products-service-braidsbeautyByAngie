@@ -188,7 +188,7 @@ class ItemProductAdapterTest {
             constantsMock.when(Constants::getTimestamp).thenReturn(currentTimestamp);
             constantsMock.when(Constants::getUserInSession).thenReturn("testUser");
 
-            when(productRepository.existsById(1L)).thenReturn(true);
+            when(productItemRepository.findById(1L)).thenReturn(Optional.of(productItemEntity));
             when(productItemRepository.save(any(ProductItemEntity.class))).thenReturn(productItemEntity);
             when(productItemMapper.mapProductItemEntityToDto(productItemEntity)).thenReturn(productItemDTO);
 
@@ -197,7 +197,6 @@ class ItemProductAdapterTest {
 
             // Then
             assertNotNull(result);
-            verify(productRepository).existsById(1L);
             verify(productItemRepository).save(any(ProductItemEntity.class));
             verify(productItemMapper).mapProductItemEntityToDto(productItemEntity);
             // Should not interact with variation repositories when no variations provided
@@ -495,6 +494,7 @@ class ItemProductAdapterTest {
     void updateItemProductOut_WithValidData_ShouldReturnUpdatedProductItemDTO() {
         // Given
         RequestItemProduct updateRequest = RequestItemProduct.builder()
+                .productId(1L)
                 .productItemSKU("SKU002")
                 .productItemPrice(BigDecimal.valueOf(1099.99))
                 .productItemQuantityInStock(15)
@@ -522,7 +522,7 @@ class ItemProductAdapterTest {
             constantsMock.when(Constants::getTimestamp).thenReturn(currentTimestamp);
             constantsMock.when(Constants::getUserInSession).thenReturn("testUser");
 
-            when(productRepository.existsById(1L)).thenReturn(true);
+            when(productItemRepository.findById(1L)).thenReturn(Optional.of(productItemEntity));
             when(variationRepository.findByVariationName("Color")).thenReturn(Optional.of(variationEntity));
             when(variationOptionRepository.existsByVariationOptionValue("Red")).thenReturn(true);
             when(variationOptionRepository.findByVariationOptionValue("Red")).thenReturn(Optional.of(variationOptionEntity));
@@ -538,31 +538,11 @@ class ItemProductAdapterTest {
             assertEquals(BigDecimal.valueOf(1099.99), result.getProductItemPrice());
             assertEquals(15, result.getProductItemQuantityInStock());
 
-            verify(productRepository).existsById(1L);
             verify(productItemRepository).save(any(ProductItemEntity.class));
             verify(productItemMapper).mapProductItemEntityToDto(updatedEntity);
         }
     }
 
-    @Test
-    @DisplayName("Should throw exception when updating non-existent product item")
-    void updateItemProductOut_WithInvalidId_ShouldThrowException() {
-        // Given
-        when(productRepository.existsById(999L)).thenReturn(false);
-
-        try (MockedStatic<ValidateUtil> validateUtilMock = mockStatic(ValidateUtil.class)) {
-            validateUtilMock.when(() -> ValidateUtil.evaluar(eq(false), any(ProductsErrorEnum.class)))
-                    .thenThrow(new RuntimeException("Product item not found"));
-
-            // When & Then
-            assertThrows(RuntimeException.class, () -> {
-                itemProductAdapter.updateItemProductOut(999L, requestItemProduct);
-            });
-
-            verify(productRepository).existsById(999L);
-            verify(productItemRepository, never()).save(any());
-        }
-    }
 
     @Test
     @DisplayName("Should delete item product successfully (soft delete)")

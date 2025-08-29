@@ -47,7 +47,7 @@ pipeline {
 				echo "Checking out code from ${env.CURRENT_BRANCH} branch"
                 checkout([
                     $class: 'GitSCM',
-                    branches: [[name: '*/main']],
+                    branches: [[name: '*/developer']],
                     userRemoteConfigs: [[
                         url: 'https://github.com/RPantaX/products-service-braidsbeautyByAngie.git',
                         credentialsId: 'github-token'
@@ -90,7 +90,7 @@ EOF
                         java -version
 
                         echo -e "\n=== COMPILACIÓN ==="
-                        mvn clean package -DskipTests --settings settings.xml
+                        mvn clean package --settings settings.xml
 
                     '''
                 }
@@ -117,10 +117,10 @@ EOF
 			when {
 				anyOf {
 					branch 'main'
-                    branch 'develop'
+                    branch 'developer'
                     // Agregar condición para cuando BRANCH_NAME sea null pero estemos en main
                     expression { env.CURRENT_BRANCH == 'main' }
-                    expression { env.CURRENT_BRANCH == 'develop' }
+                    expression { env.CURRENT_BRANCH == 'developer' }
                 }
             }
             steps {
