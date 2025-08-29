@@ -15,32 +15,6 @@ pipeline {
 		maven 'maven4.0.0'
     }
     stages {
-        stage('Verify GitHub Access') {
-			steps {
-				echo 'Verifying GitHub Packages access...'
-                sh '''
-                    echo "Testing GitHub authentication..."
-
-                    # Test GitHub authentication with more details
-                    HTTP_STATUS=$(curl -u ${GITHUB_USERNAME}:${GITHUB_TOKEN} \
-                         -s -o /dev/null -w "%{http_code}" \
-                         https://maven.pkg.github.com/RPantaX/core-service-braidsbeautyByAngie/com/braidsbeautyByAngie/saga-pattern-spring-boot/maven-metadata.xml)
-
-                    echo "HTTP Status Code: $HTTP_STATUS"
-
-                    if [ "$HTTP_STATUS" = "200" ]; then
-                        echo "✅ GitHub authentication successful"
-                        echo "Package metadata found:"
-                        curl -u ${GITHUB_USERNAME}:${GITHUB_TOKEN} \
-                             https://maven.pkg.github.com/RPantaX/core-service-braidsbeautyByAngie/com/braidsbeautyByAngie/saga-pattern-spring-boot/maven-metadata.xml \
-                             -s | head -10
-                    else
-                        echo "❌ GitHub authentication failed with status: $HTTP_STATUS"
-                        exit 1
-                    fi
-                '''
-            }
-        }
         stage('Clone Core Service') {
                     steps {
                         echo "Clonando core-service-braidsbeautyByAngie..."
