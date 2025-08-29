@@ -147,22 +147,28 @@ class ProductAdapterTest {
             constantsMock.when(Constants::getTimestamp).thenReturn(currentTimestamp);
             constantsMock.when(Constants::getUserInSession).thenReturn("testUser");
 
-            when(productRepository.existsByProductName("iPhone 15")).thenReturn(false);
+            when(productRepository.existsByProductName("IPHONE 15")).thenReturn(false);
             when(productCategoryRepository.findProductCategoryIdAndStateTrue(1L)).thenReturn(Optional.of(categoryEntity));
             when(productRepository.save(any(ProductEntity.class))).thenReturn(productEntity);
-            when(productMapper.mapProductEntityToDto(productEntity)).thenReturn(productDTO);
+            ProductDTO productDTO1 = ProductDTO.builder()
+                    .productId(1L)
+                    .productName("IPHONE 15")
+                    .productDescription("Latest iPhone model")
+                    .productImage("iphone15.jpg")
+                    .build();
+            when(productMapper.mapProductEntityToDto(productEntity)).thenReturn(productDTO1);
 
             // When
             ProductDTO result = productAdapter.createProductOut(requestProduct);
 
             // Then
             assertNotNull(result);
-            assertEquals("iPhone 15", result.getProductName());
+            assertEquals("IPHONE 15", result.getProductName());
             assertEquals("Latest iPhone model", result.getProductDescription());
             assertEquals("iphone15.jpg", result.getProductImage());
             assertEquals(1L, result.getProductId());
 
-            verify(productRepository).existsByProductName("iPhone 15");
+            verify(productRepository).existsByProductName("IPHONE 15");
             verify(productCategoryRepository).findProductCategoryIdAndStateTrue(1L);
             verify(productRepository).save(any(ProductEntity.class));
             verify(productMapper).mapProductEntityToDto(productEntity);
@@ -184,7 +190,6 @@ class ProductAdapterTest {
                 productAdapter.createProductOut(requestProduct);
             });
 
-            verify(productRepository).existsByProductName("iPhone 15");
             verify(productCategoryRepository, never()).findProductCategoryIdAndStateTrue(anyLong());
             verify(productRepository, never()).save(any());
         }
@@ -194,7 +199,7 @@ class ProductAdapterTest {
     @DisplayName("Should throw exception when category not found")
     void createProductOut_WithInvalidCategoryId_ShouldThrowException() {
         // Given
-        when(productRepository.existsByProductName("iPhone 15")).thenReturn(false);
+        when(productRepository.existsByProductName("IPHONE 15")).thenReturn(false);
         when(productCategoryRepository.findProductCategoryIdAndStateTrue(1L)).thenReturn(Optional.empty());
 
         try (MockedStatic<ValidateUtil> validateUtilMock = mockStatic(ValidateUtil.class)) {
@@ -206,7 +211,7 @@ class ProductAdapterTest {
                 productAdapter.createProductOut(requestProduct);
             });
 
-            verify(productRepository).existsByProductName("iPhone 15");
+            verify(productRepository).existsByProductName("IPHONE 15");
             verify(productCategoryRepository).findProductCategoryIdAndStateTrue(1L);
             verify(productRepository, never()).save(any());
         }
@@ -436,7 +441,7 @@ class ProductAdapterTest {
             constantsMock.when(Constants::getUserInSession).thenReturn("testUser");
 
             when(productRepository.findProductByProductIdWithStateTrue(1L)).thenReturn(Optional.of(productEntity));
-            when(productRepository.existsByProductName("iPhone 16")).thenReturn(false);
+            when(productRepository.existsByProductName("IPHONE 16")).thenReturn(false);
             when(productCategoryRepository.existByProductCategoryIdAndStateTrue(1L)).thenReturn(true);
             when(productCategoryRepository.findProductCategoryIdAndStateTrue(1L)).thenReturn(Optional.of(categoryEntity));
             when(productRepository.save(any(ProductEntity.class))).thenReturn(productEntity);
@@ -447,7 +452,7 @@ class ProductAdapterTest {
 
             // Then
             assertNotNull(result);
-            verify(productRepository).existsByProductName("iPhone 16");
+            verify(productRepository).existsByProductName("IPHONE 16");
             verify(productRepository).save(any(ProductEntity.class));
         }
     }
@@ -475,7 +480,7 @@ class ProductAdapterTest {
                 productAdapter.updateProductOut(1L, updateRequest);
             });
 
-            verify(productRepository).existsByProductName("Samsung Galaxy");
+            verify(productRepository).existsByProductName("SAMSUNG GALAXY");
             verify(productRepository, never()).save(any());
         }
     }

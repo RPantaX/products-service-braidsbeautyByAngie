@@ -85,7 +85,7 @@ class PromotionAdapterTest {
         // Setup promotion entity
         promotionEntity = PromotionEntity.builder()
                 .promotionId(1L)
-                .promotionName("Summer Sale")
+                .promotionName("SUMMER SALE")
                 .promotionDescription("Great summer discounts")
                 .promotionDiscountRate(BigDecimal.valueOf(0.15))
                 .promotionStartDate(startDate)
@@ -99,7 +99,7 @@ class PromotionAdapterTest {
         // Setup promotion DTO
         promotionDTO = PromotionDTO.builder()
                 .promotionId(1L)
-                .promotionName("Summer Sale")
+                .promotionName("SUMMER SALE")
                 .promotionDescription("Great summer discounts")
                 .promotionDiscountRate(0.15)
                 .promotionStartDate(startDate)
@@ -124,7 +124,7 @@ class PromotionAdapterTest {
             constantsMock.when(Constants::getTimestamp).thenReturn(currentTimestamp);
             constantsMock.when(Constants::getUserInSession).thenReturn("testUser");
 
-            when(promotionRepository.existsByPromotionName("Summer Sale")).thenReturn(false);
+            when(promotionRepository.existsByPromotionName("SUMMER SALE")).thenReturn(false);
             when(promotionRepository.save(any(PromotionEntity.class))).thenReturn(promotionEntity);
             when(promotionMapper.mapPromotionEntityToDto(promotionEntity)).thenReturn(promotionDTO);
 
@@ -133,14 +133,14 @@ class PromotionAdapterTest {
 
             // Then
             assertNotNull(result);
-            assertEquals("Summer Sale", result.getPromotionName());
+            assertEquals("SUMMER SALE", result.getPromotionName());
             assertEquals("Great summer discounts", result.getPromotionDescription());
             assertEquals(0.15, result.getPromotionDiscountRate());
             assertEquals(startDate, result.getPromotionStartDate());
             assertEquals(endDate, result.getPromotionEndDate());
             assertEquals(1L, result.getPromotionId());
 
-            verify(promotionRepository).existsByPromotionName("Summer Sale");
+            verify(promotionRepository).existsByPromotionName("SUMMER SALE");
             verify(promotionRepository).save(any(PromotionEntity.class));
             verify(promotionMapper).mapPromotionEntityToDto(promotionEntity);
         }
@@ -161,7 +161,7 @@ class PromotionAdapterTest {
                 promotionAdapter.createPromotionOut(requestPromotion);
             });
 
-            verify(promotionRepository).existsByPromotionName("Summer Sale");
+            verify(promotionRepository).existsByPromotionName("SUMMER SALE");
             verify(promotionRepository, never()).save(any());
         }
     }
@@ -182,7 +182,7 @@ class PromotionAdapterTest {
         ResponsePromotion responsePromotion = result.get();
 
         assertNotNull(responsePromotion.getPromotionDTO());
-        assertEquals("Summer Sale", responsePromotion.getPromotionDTO().getPromotionName());
+        assertEquals("SUMMER SALE", responsePromotion.getPromotionDTO().getPromotionName());
         assertEquals("Great summer discounts", responsePromotion.getPromotionDTO().getPromotionDescription());
 
         assertNotNull(responsePromotion.getCategoryDTOList());
@@ -394,7 +394,7 @@ class PromotionAdapterTest {
         assertEquals(1, result.getResponsePromotionList().size());
 
         ResponsePromotion responsePromotion = result.getResponsePromotionList().get(0);
-        assertEquals("Summer Sale", responsePromotion.getPromotionDTO().getPromotionName());
+        assertEquals("SUMMER SALE", responsePromotion.getPromotionDTO().getPromotionName());
         assertEquals(1, responsePromotion.getCategoryDTOList().size());
 
         verify(promotionRepository).findAllByStateTrueAmdPageable(any(Pageable.class));
@@ -455,7 +455,7 @@ class PromotionAdapterTest {
         // Then
         assertNotNull(result);
         assertEquals(1, result.size());
-        assertEquals("Summer Sale", result.get(0).getPromotionName());
+        assertEquals("SUMMER SALE", result.get(0).getPromotionName());
         assertEquals("Great summer discounts", result.get(0).getPromotionDescription());
 
         verify(promotionRepository).findAllByStateTrue();
@@ -540,7 +540,7 @@ class PromotionAdapterTest {
                 PromotionEntity savedEntity = invocation.getArgument(0);
 
                 // Verify that the entity was properly updated
-                assertEquals("Summer Sale", savedEntity.getPromotionName());
+                assertEquals("SUMMER SALE", savedEntity.getPromotionName());
                 assertEquals("Great summer discounts", savedEntity.getPromotionDescription());
                 assertEquals(BigDecimal.valueOf(0.15), savedEntity.getPromotionDiscountRate());
                 assertEquals(startDate, savedEntity.getPromotionStartDate());
@@ -607,7 +607,7 @@ class PromotionAdapterTest {
 
         PromotionEntity minimalEntity = PromotionEntity.builder()
                 .promotionId(2L)
-                .promotionName("Simple Sale")
+                .promotionName("SIMPLE SALE")
                 .promotionDescription(null)
                 .promotionDiscountRate(null)
                 .promotionStartDate(null)
@@ -617,7 +617,7 @@ class PromotionAdapterTest {
 
         PromotionDTO minimalDTO = PromotionDTO.builder()
                 .promotionId(2L)
-                .promotionName("Simple Sale")
+                .promotionName("SIMPLE SALE")
                 .promotionDescription(null)
                 .promotionDiscountRate(null)
                 .promotionStartDate(null)
@@ -628,7 +628,7 @@ class PromotionAdapterTest {
             constantsMock.when(Constants::getTimestamp).thenReturn(currentTimestamp);
             constantsMock.when(Constants::getUserInSession).thenReturn("testUser");
 
-            when(promotionRepository.existsByPromotionName("Simple Sale")).thenReturn(false);
+            when(promotionRepository.existsByPromotionName("SIMPLE SALE")).thenReturn(false);
             when(promotionRepository.save(any(PromotionEntity.class))).thenReturn(minimalEntity);
             when(promotionMapper.mapPromotionEntityToDto(minimalEntity)).thenReturn(minimalDTO);
 
@@ -637,7 +637,7 @@ class PromotionAdapterTest {
 
             // Then
             assertNotNull(result);
-            assertEquals("Simple Sale", result.getPromotionName());
+            assertEquals("SIMPLE SALE", result.getPromotionName());
             assertNull(result.getPromotionDescription());
             assertNull(result.getPromotionDiscountRate());
             assertNull(result.getPromotionStartDate());

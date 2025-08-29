@@ -117,20 +117,24 @@ class CategoryAdapterTest {
             constantsMock.when(Constants::getTimestamp).thenReturn(currentTimestamp);
             constantsMock.when(Constants::getUserInSession).thenReturn("testUser");
 
-            when(productCategoryRepository.existsByProductCategoryName("Electronics")).thenReturn(false);
+            when(productCategoryRepository.existsByProductCategoryName("ELECTRONICS")).thenReturn(false);
             when(promotionRepository.findAllByPromotionIdAndStateTrue(anyList())).thenReturn(promotions);
             when(productCategoryRepository.save(any(ProductCategoryEntity.class))).thenReturn(categoryEntity);
-            when(productCategoryMapper.mapCategoryEntityToDTO(categoryEntity)).thenReturn(categoryDTO);
+            ProductCategoryDTO categoryDTOUpper = ProductCategoryDTO.builder()
+                    .categoryId(1L)
+                    .categoryName("ELECTRONICS")
+                    .build();
+            when(productCategoryMapper.mapCategoryEntityToDTO(categoryEntity)).thenReturn(categoryDTOUpper);
 
             // When
             ProductCategoryDTO result = categoryAdapter.createCategoryOut(requestCategory);
 
             // Then
             assertNotNull(result);
-            assertEquals("Electronics", result.getCategoryName());
+            assertEquals("ELECTRONICS", result.getCategoryName());
             assertEquals(1L, result.getCategoryId());
 
-            verify(productCategoryRepository).existsByProductCategoryName("Electronics");
+            verify(productCategoryRepository).existsByProductCategoryName("ELECTRONICS");
             verify(promotionRepository).findAllByPromotionIdAndStateTrue(requestCategory.getPromotionListId());
             verify(productCategoryRepository).save(any(ProductCategoryEntity.class));
             verify(productCategoryMapper).mapCategoryEntityToDTO(categoryEntity);
@@ -150,16 +154,18 @@ class CategoryAdapterTest {
             constantsMock.when(Constants::getTimestamp).thenReturn(currentTimestamp);
             constantsMock.when(Constants::getUserInSession).thenReturn("testUser");
 
-            when(productCategoryRepository.existsByProductCategoryName("Electronics")).thenReturn(false);
+            when(productCategoryRepository.existsByProductCategoryName("ELECTRONICS")).thenReturn(false);
             when(productCategoryRepository.save(any(ProductCategoryEntity.class))).thenReturn(categoryEntity);
-            when(productCategoryMapper.mapCategoryEntityToDTO(categoryEntity)).thenReturn(categoryDTO);
-
+            ProductCategoryDTO categoryDTOUpper = ProductCategoryDTO.builder()
+                    .categoryName("ELECTRONICS")
+                    .build();
+            when(productCategoryMapper.mapCategoryEntityToDTO(categoryEntity)).thenReturn(categoryDTOUpper);
             // When
             ProductCategoryDTO result = categoryAdapter.createCategoryOut(requestWithoutPromotions);
 
             // Then
             assertNotNull(result);
-            assertEquals("Electronics", result.getCategoryName());
+            assertEquals("ELECTRONICS", result.getCategoryName());
 
             verify(productCategoryRepository, never()).findAllByPromotionIdAndStateTrue(anyList());
         }
@@ -180,7 +186,7 @@ class CategoryAdapterTest {
                 categoryAdapter.createCategoryOut(requestCategory);
             });
 
-            verify(productCategoryRepository).existsByProductCategoryName("Electronics");
+            verify(productCategoryRepository).existsByProductCategoryName("ELECTRONICS");
             verify(productCategoryRepository, never()).save(any());
         }
     }
@@ -454,7 +460,7 @@ class CategoryAdapterTest {
             constantsMock.when(Constants::getTimestamp).thenReturn(currentTimestamp);
             constantsMock.when(Constants::getUserInSession).thenReturn("testUser");
 
-            when(productCategoryRepository.existsByProductCategoryName("Electronics")).thenReturn(false);
+            when(productCategoryRepository.existsByProductCategoryName("ELECTRONICS")).thenReturn(false);
             when(productCategoryRepository.save(any(ProductCategoryEntity.class))).thenReturn(categoryEntity);
             when(productCategoryMapper.mapCategoryEntityToDTO(categoryEntity)).thenReturn(categoryDTO);
 
