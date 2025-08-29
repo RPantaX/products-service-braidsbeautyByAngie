@@ -41,60 +41,56 @@ pipeline {
                 '''
             }
         }
-        stage('Clone Repo') {
-			steps {
-				echo "Checking out code from ${env.CURRENT_BRANCH} branch"
-                checkout([
-                    $class: 'GitSCM',
-                    branches: [[name: '*/developer']],
-                    userRemoteConfigs: [[
-                        url: 'https://github.com/RPantaX/products-service-braidsbeautyByAngie.git',
-                        credentialsId: 'github-token'
-                    ]]
-                ])
-                script {
-					// Obtener información del commit y rama actual
-                    env.GIT_COMMIT = sh(returnStdout: true, script: 'git rev-parse HEAD').trim()
-                    env.CURRENT_BRANCH = sh(returnStdout: true, script: 'git rev-parse --abbrev-ref HEAD').trim()
-                    env.DOCKER_IMAGE_TAG = "${BUILD_NUMBER}-${env.GIT_COMMIT.take(7)}"
-                    echo "Building from branch: ${env.CURRENT_BRANCH}"
-                    echo "Git commit: ${env.GIT_COMMIT}"
-                    echo "Docker tag: ${env.DOCKER_IMAGE_TAG}"
+        stage('Clone Core Service') {
+                    steps {
+                        echo "Clonando core-service-braidsbeautyByAngie..."
+                        dir('core-service') {
+                            git branch: 'main',
+                                url: 'https://github.com/RPantaX/core-service-braidsbeautyByAngie.git',
+                                credentialsId: 'github-token'
+                        }
+                    }
                 }
-            }
-        }
-stage('Clean & Compile') {
-			steps {
-				echo 'Cleaning and compiling the project...'
-                withCredentials([string(credentialsId: 'github-token-2', variable: 'GITHUB_TOKEN')]) {
-					sh '''
-                        echo "=== Generating Maven settings.xml ==="
-                        cat > settings.xml <<EOF
-<settings>
-  <servers>
-    <server>
-      <id>github</id>
-      <username>RPantaX</username>
-      <password>${GITHUB_TOKEN}</password>
-    </server>
-  </servers>
-</settings>
-EOF
 
-                        echo "=== VERIFICACIÓN PRE-COMPILACIÓN ==="
-                        echo "Maven version:"
-                        mvn -version
-
-                        echo -e "\nJava version:"
-                        java -version
-
-                        echo -e "\n=== COMPILACIÓN ==="
-                        mvn clean package --settings settings.xml
-
-                    '''
+                stage('Install Core Service') {
+                    steps {
+                        dir('core-service') {
+                            echo "Instalando core-service en el repositorio local..."
+                            sh 'mvn clean install -DskipTests'
+                        }
+                    }
                 }
-            }
-        }
+
+                stage('Clone Product Service') {
+                    steps {
+                        echo "Clonando products-service-braidsbeautyByAngie..."
+                        dir('products-service') {
+                            git branch: 'developer',
+                                url: 'https://github.com/RPantaX/products-service-braidsbeautyByAngie.git',
+                                credentialsId: 'github-token'
+                        }
+
+                        script {
+                            dir('products-service') {
+                                env.GIT_COMMIT = sh(returnStdout: true, script: 'git rev-parse HEAD').trim()
+                                env.CURRENT_BRANCH = sh(returnStdout: true, script: 'git rev-parse --abbrev-ref HEAD').trim()
+                                env.DOCKER_IMAGE_TAG = "${BUILD_NUMBER}-${env.GIT_COMMIT.take(7)}"
+                            }
+                            echo "Building from branch: ${env.CURRENT_BRANCH}"
+                            echo "Git commit: ${env.GIT_COMMIT}"
+                            echo "Docker tag: ${env.DOCKER_IMAGE_TAG}"
+                        }
+                    }
+                }
+
+                stage('Build Product Service') {
+                    steps {
+                        dir('products-service') {
+                            echo "Compilando products-service..."
+                            sh 'mvn clean package -DskipTests'
+                        }
+                    }
+                }
 
         stage('Docker Build') {
 			steps {
