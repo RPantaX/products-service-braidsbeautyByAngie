@@ -14,7 +14,6 @@ pipeline {
     tools {
 		maven 'maven4.0.0'
     }
-
     stages {
         stage('Verify GitHub Access') {
 			steps {
