@@ -1,3 +1,4 @@
+@Library('core-service') _
 pipeline {
 	agent any
 
@@ -16,26 +17,6 @@ pipeline {
     }
 
     stages {
-        stage('Clone Core Service') {
-                    steps {
-                        echo "Clonando core-service-braidsbeautyByAngie..."
-                        dir('core-service') {
-                            git branch: 'main',
-                                url: 'https://github.com/RPantaX/core-service-braidsbeautyByAngie.git',
-                                credentialsId: 'github-token'
-                        }
-                    }
-                }
-
-                stage('Install Core Service') {
-                    steps {
-                        dir('core-service') {
-                            echo "Instalando core-service en el repositorio local..."
-                            sh 'mvn clean install -DskipTests'
-                        }
-                    }
-                }
-
                 stage('Clone Product Service') {
                     steps {
                         echo "Clonando products-service-braidsbeautyByAngie..."
