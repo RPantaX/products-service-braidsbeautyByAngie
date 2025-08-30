@@ -8,12 +8,13 @@ pipeline {
         // GitHub Authentication - FIXED
         GITHUB_USERNAME = 'RPantaX'
         GITHUB_TOKEN = credentials('github-token-2')  // Para GitHub Packages
-        CURRENT_BRANCH = "${env.BRANCH_NAME ?: 'main'}"
+        CURRENT_BRANCH = "${env.BRANCH_NAME ?: 'developer'}"
     }
 
     tools {
 		maven 'maven4.0.0'
     }
+
     stages {
         stage('Clone Core Service') {
                     steps {
@@ -85,10 +86,8 @@ pipeline {
         stage('Docker Push') {
 			when {
 				anyOf {
-					branch 'main'
                     branch 'developer'
                     // Agregar condición para cuando BRANCH_NAME sea null pero estemos en main
-                    expression { env.CURRENT_BRANCH == 'main' }
                     expression { env.CURRENT_BRANCH == 'developer' }
                 }
             }
